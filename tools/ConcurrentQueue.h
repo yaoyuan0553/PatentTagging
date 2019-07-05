@@ -69,18 +69,19 @@ public:
     std::pair<T, bool> pop()
     {
         using namespace std;
-        pair<T, bool> ret{T(), false};
 
         mutex_.lock();
         while (queue_.empty()) {
             mutex_.unlock();
             if (quitSignal_)
-                return ret;
-            this_thread::sleep_for(chrono::seconds(1));
+                return pair<T, bool>{T(), true};
+
+            this_thread::sleep_for(chrono::milliseconds(2));
             mutex_.lock();
         }
 
-        ret.first = queue_.front();
+
+        pair<T, bool> ret{queue_.front(), false};
         queue_.pop();
         mutex_.unlock();
 

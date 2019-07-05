@@ -7,17 +7,28 @@
 
 void FileDistributor::internalRun()
 {
+    /* if input file is not setup properly
+     * set signal to terminate other threads
+     * and quit gracefully */
+    if (!pathFile_.is_open()) {
+        std::cout << "file not opened\n";
+        filenameQueue_.setQuitSignal();
+        return;
+    }
+
     int i = 0;
     std::vector<std::string> fileBatch;
-    fileBatch.reserve(batchSize);
-    for (std::string filename; std::getline(std::cin, filename); i++)
+    fileBatch.reserve(batchSize_);
+    for (std::string filename; std::getline(pathFile_, filename);)
     {
-        if (i % batchSize == 0) {
+        std::cout << filename << "\n";
+        fileBatch.push_back(filename);
+        if (++i % batchSize_ == 0) {
             filenameQueue_.push(fileBatch);
             fileBatch.clear();
         }
-        fileBatch.push_back(filename);
     }
+
     if (!fileBatch.empty())
         filenameQueue_.push(fileBatch);
 

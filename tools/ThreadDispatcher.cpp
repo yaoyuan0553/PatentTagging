@@ -4,8 +4,10 @@
 
 #include "ThreadDispatcher.h"
 
-ThreadDispatcher::ThreadDispatcher(int numConsumers, int batchSize):
-    numConsumers_(numConsumers), producer_(batchSize), consumers_(numConsumers)
+ThreadDispatcher::ThreadDispatcher(const std::string& pathFilename,
+        int numConsumers, int batchSize):
+        numConsumers_(numConsumers), producer_(pathFilename, batchSize),
+        consumers_(numConsumers)
 {
     // start all threads
     producer_.run();

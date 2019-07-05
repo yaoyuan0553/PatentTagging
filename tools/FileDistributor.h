@@ -9,13 +9,16 @@
 #include <vector>
 #include <string>
 #include <thread>
+#include <fstream>
 
 #include "ConcurrentQueue.h"
 #include "PatentTagCollector.h"
 #include "ThreadJob.h"
 
 class FileDistributor : public ThreadJob {
-    int batchSize;
+    int batchSize_;
+    std::string pathFilename_;
+    std::ifstream pathFile_;
 
     ConcurrentQueue<std::string> filenameQueue_;
 
@@ -23,8 +26,11 @@ class FileDistributor : public ThreadJob {
 
 public:
 
-    explicit FileDistributor(int batchSize = 128):
-        batchSize(batchSize) { }
+    explicit FileDistributor(std::string pathFilename, int batchSize = 128):
+        pathFilename_(std::move(pathFilename)), batchSize_(batchSize)
+        { pathFile_.open(pathFilename); }
+
+    ~FileDistributor() { if (pathFile_.is_open()) pathFile_.close(); }
 
     void run();
 

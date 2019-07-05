@@ -29,7 +29,8 @@ public:
     //     for (int i = 0; i < numConsumers_; i++)
     //         consumers_.emplace_back(consumerArgs...);
     // }
-    explicit ThreadDispatcher(int numConsumers = 1, int batchSize = 128);
+    explicit ThreadDispatcher(const std::string& pathFilename, int numConsumers = 1,
+            int batchSize = 128);
 
     void join();
 };

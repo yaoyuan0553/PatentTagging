@@ -11,7 +11,10 @@ void PatentTagCollector::internalRun(ConcurrentQueue<std::string>& filenameQueue
     for (;;)
     {
         // consume object from queue
+        std::cout << "thread started\n";
         auto [filename, quit] = filenameQueue.pop();
+
+        std::cout << "got element: " << filename << "quit: " << quit << "\n";
         if (quit) break;
 
         pugi::xml_parse_result result = doc_.load_file(filename.c_str());

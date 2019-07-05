@@ -39,13 +39,32 @@ void test()
     outputFile.close();
 }
 
-
-int main()
+void printUsageAndExit()
 {
-    ThreadDispatcher threadDispatcher(1, 1);
-    printf("threads started\n");
+    printf("Usage:\n\ttools <path-file>\n\n<path-file>\t\tfile storing paths to xml files"
+           "needed to be parsed\n");
+    exit(0);
+}
 
-    threadDispatcher.join();
+int main(int argc, char* argv[])
+{
+    if (argc != 2)
+        printUsageAndExit();
+
+    string pathFilename(argv[1]);
+
+    ifstream ifs(pathFilename);
+
+    if (ifs.is_open()) {
+        printf("file opened\n");
+        string line;
+        getline(ifs, line);
+
+        cout << line << endl;
+    }
+    // ThreadDispatcher threadDispatcher(pathFilename, 1, 1);
+
+    // threadDispatcher.join();
 
     return 0;
 }
