@@ -19,6 +19,9 @@
  * */
 template <typename T, typename Container = std::deque<T>>
 class ConcurrentQueue {
+    size_t totalPushedItems_ = 0;
+    size_t totalPoppedItems_ = 0;
+
     std::queue<T> queue_;
     std::mutex mutex_;
     bool quitSignal_ = false;
@@ -52,6 +55,7 @@ public:
     {
         std::lock_guard<decltype(mutex_)> lock(mutex_);
         queue_.push(item);
+        totalPushedItems_++;
     }
 
     /* push a list of items to the queue, batch push*/
@@ -60,6 +64,7 @@ public:
         std::lock_guard<decltype(mutex_)> lock(mutex_);
         for (auto item : items)
             queue_.push(item);
+        totalPushedItems_ += items.size();
     }
 
     /* pops a single item from the queue,
@@ -83,9 +88,37 @@ public:
 
         pair<T, bool> ret{queue_.front(), false};
         queue_.pop();
+        totalPoppedItems_++;
+
         mutex_.unlock();
 
         return ret;
+    }
+
+    size_t size()
+    {
+        std::lock_guard<decltype(mutex_)> lock(mutex_);
+
+        return queue_.size();
+    }
+
+    size_t totalPoppedItems()
+    {
+        std::lock_guard<decltype(mutex_)> lock(mutex_);
+
+        return totalPoppedItems_;
+    }
+
+    size_t totalPushedItems()
+    {
+        std::lock_guard<decltype(mutex_)> lock(mutex_);
+
+        return totalPushedItems_;
+    }
+
+    bool isQuit() const
+    {
+        return quitSignal_;
     }
 };
 

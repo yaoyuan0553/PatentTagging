@@ -7,11 +7,14 @@
 #include <queue>
 #include <unordered_set>
 
+#include <tqdm.h>
+
 #include <pugixml.hpp>  // linker "pugixml" needed
 #include "ConcurrentQueue.h"  // linker "pthread" needed
 #include "PatentTagWalker.h"
 #include "PatentTagCollector.h"
 #include "ThreadDispatcher.h"
+
 
 using namespace std;
 using namespace pugi;
@@ -41,31 +44,26 @@ void test()
 
 void printUsageAndExit()
 {
-    printf("Usage:\n\ttools <path-file>\n\n<path-file>\t\tfile storing paths to xml files"
+    printf("Usage:\n\ttools <path-file> <output-file> <n-threads>\n\n"
+           "<path-file>\t\tfile storing paths to xml files"
            "needed to be parsed\n");
     exit(0);
 }
 
 int main(int argc, char* argv[])
 {
-    if (argc != 2)
+    if (argc != 4)
         printUsageAndExit();
 
     string pathFilename(argv[1]);
+    string outputFilename(argv[2]);
+    int nWorkers = atoi(argv[3]);
 
-//    ifstream ifs(pathFilename);
-//
-//    if (ifs.is_open()) {
-//     printf("file opened\n");
-//     string line;
-//     getline(ifs, line);
-//
-//     cout << line << endl;
-//    }
-
-    ThreadDispatcher threadDispatcher(pathFilename, 10, 1);
+    ThreadDispatcher threadDispatcher(pathFilename, nWorkers, 128);
 
     threadDispatcher.join();
+
+    threadDispatcher.writeResult2File(outputFilename);
 
     return 0;
 }

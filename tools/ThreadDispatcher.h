@@ -11,6 +11,7 @@
 #include "ThreadJob.h"
 #include "FileDistributor.h"
 #include "PatentTagCollector.h"
+#include "StatsThread.h"
 
 // single producer, multiple consumer model
 class ThreadDispatcher {
@@ -18,6 +19,9 @@ class ThreadDispatcher {
 
     FileDistributor producer_;
     std::vector<PatentTagCollector> consumers_;
+
+    StatsThread stats_;
+
 
 public:
     // TODO: check how to do this
@@ -29,10 +33,12 @@ public:
     //     for (int i = 0; i < numConsumers_; i++)
     //         consumers_.emplace_back(consumerArgs...);
     // }
-    explicit ThreadDispatcher(const std::string& pathFilename, int numConsumers = 1,
+    ThreadDispatcher(const std::string& pathFilename, int numConsumers = 1,
             int batchSize = 128);
 
     void join();
+
+    void writeResult2File(const std::string& filename);
 };
 
 

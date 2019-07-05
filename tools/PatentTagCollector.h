@@ -29,6 +29,8 @@ public:
     PatentTagCollector() = default;
 
     void run(ConcurrentQueue<std::string>& filenameQueue);
+
+    auto& uniqueTags() { return walker_.uniqueTags; }
 };
 
 
