@@ -10,13 +10,14 @@
 bool PatentTagWalker::for_each(pugi::xml_node& node)
 {
     if (strcmp(node.name(), "classification-ipcr") == 0) {
-        if (node.find_child([](pugi::xml_node& childNode){
+        if (node.find_child([](pugi::xml_node& childNode) {
             return strcmp(childNode.name(), "text") == 0;
-        })) {
+        }))
+        {
             const char* patentTag = node.child("text").text().get();
             int tagLen = strlen(patentTag);
             if (tagLen == 0)
-                fprintf(stderr, "file [%s] has irregular classification-ipcr\n", curFilename);
+                isIrregular = true;
             else {
                 if (auto space = strchr(patentTag, ' '); space)
                     tagLen = space - patentTag;
@@ -25,7 +26,7 @@ bool PatentTagWalker::for_each(pugi::xml_node& node)
             }
         }
         else {
-            fprintf(stderr, "file [%s] has irregular classification-ipcr\n", curFilename);
+            isIrregular = true;
         }
     }
     return true;

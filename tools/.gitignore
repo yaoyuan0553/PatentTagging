@@ -1,1 +1,4 @@
 cmake-*/
+
+bin/
+debug/

@@ -5,13 +5,14 @@
 #include "PatentTagCollector.h"
 
 #include <iostream>
+#include <stdio.h>
 
 void PatentTagCollector::internalRun(ConcurrentQueue<std::string>& filenameQueue)
 {
     for (;;)
     {
         // consume object from queue
-        std::cout << "thread started\n";
+        std::cout << "thread " << thread_.get_id() << " started\n";
         auto [filename, quit] = filenameQueue.pop();
 
         std::cout << "got element: " << filename << "quit: " << quit << "\n";
@@ -23,7 +24,10 @@ void PatentTagCollector::internalRun(ConcurrentQueue<std::string>& filenameQueue
             continue;
         }
         walker_.curFilename = filename.c_str();
+        walker_.isIrregular = false;
         doc_.traverse(walker_);
+        if (walker_.isIrregular)
+            errorFiles_.push_back(filename);
     }
     std::cout << "thread " << thread_.get_id() << " finished\n";
     for (const auto& tag : walker_.uniqueTags)

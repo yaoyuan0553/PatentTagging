@@ -53,18 +53,19 @@ int main(int argc, char* argv[])
 
     string pathFilename(argv[1]);
 
-    ifstream ifs(pathFilename);
+//    ifstream ifs(pathFilename);
+//
+//    if (ifs.is_open()) {
+//     printf("file opened\n");
+//     string line;
+//     getline(ifs, line);
+//
+//     cout << line << endl;
+//    }
 
-    if (ifs.is_open()) {
-        printf("file opened\n");
-        string line;
-        getline(ifs, line);
+    ThreadDispatcher threadDispatcher(pathFilename, 10, 1);
 
-        cout << line << endl;
-    }
-    // ThreadDispatcher threadDispatcher(pathFilename, 1, 1);
-
-    // threadDispatcher.join();
+    threadDispatcher.join();
 
     return 0;
 }

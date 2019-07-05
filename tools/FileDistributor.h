@@ -18,7 +18,6 @@
 class FileDistributor : public ThreadJob {
     int batchSize_;
     std::string pathFilename_;
-    std::ifstream pathFile_;
 
     ConcurrentQueue<std::string> filenameQueue_;
 
@@ -27,10 +26,7 @@ class FileDistributor : public ThreadJob {
 public:
 
     explicit FileDistributor(std::string pathFilename, int batchSize = 128):
-        pathFilename_(std::move(pathFilename)), batchSize_(batchSize)
-        { pathFile_.open(pathFilename); }
-
-    ~FileDistributor() { if (pathFile_.is_open()) pathFile_.close(); }
+        pathFilename_(std::move(pathFilename)), batchSize_(batchSize) { }
 
     void run();
 
