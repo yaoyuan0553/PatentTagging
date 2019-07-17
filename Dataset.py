@@ -1,3 +1,10 @@
+"""
+Provides Dataset enclosure for representing patent training/dev/evaluation data
+
+Usage:
+    Dataset.py --tokenizer=<file>
+"""
+
 import torch
 import pandas as pd
 import numpy as np
@@ -5,6 +12,8 @@ import numpy as np
 from typing import Optional, List
 from torch.utils import data
 from pytorch_pretrained_bert import BertTokenizer
+
+from Utils import countLinesInFile
 
 
 class LargePatentDataset(data.Dataset):
@@ -34,8 +43,6 @@ class LargePatentDataset(data.Dataset):
 
     def _shuffle(self):
         randIdxs = torch.randperm(self.chunkSize)
-        self.sentences = self.sentences[randIdxs]
-        self.tags = self.tags[randIdxs]
         self.Xs = self.Xs[randIdxs]
         self.Ys = self.Ys[randIdxs]
         return randIdxs
@@ -87,6 +94,10 @@ class CsvDataset(LargePatentDataset):
         return randIdxs
 
     def __getitem__(self, index):
+        """
+        :param index:
+        :return (List[str], List[str]]): a tokenized sentence and a list of tags
+        """
         if not self.loadStarted:
             self.dataGenerator = self._chunkLoad()
             self.loadStarted = True
@@ -115,26 +126,28 @@ class TsvDataset(LargePatentDataset):
             (np.ndarray) Xs: input (abstract) converted to tokens for each data entry
             (np.ndarray) Ys: output (tags) for each data entry
         """
-        for chunk in pd.read_csv(self.filePath, sep='\t', chunksize=self.chunkSize):
+        for chunk in pd.read_csv(self.filePath, sep='\t', chunksize=self.chunkSize,
+                                 header=None, names=['tag', 'text']):
             chunkNp: np.ndarray = chunk.values
             Xs: np.ndarray = np.array([self.tokenizer.tokenize(sent) for sent in chunkNp[:, 1]])
-            tags = np.nonzero(chunkNp[:, 2:])
-            Ys = [[] for _ in range(self.chunkSize)]
-            for i in range(len(tags[0])):
-                Ys[tags[0][i]].append(tags[1][i])
-            Ys: np.ndarray = np.array(Ys)
+            Ys: np.ndarray = chunkNp[:, 0]
 
             yield Xs, Ys
 
     def __getitem__(self, index):
+        """
+        :param index:
+        :return (List[str]], str): a tokenized sentence and a single tag
+        """
+        if not self.loadStarted:
+            self.dataGenerator = self._chunkLoad()
+            self.loadStarted = True
+
         if index % self.chunkSize == 0:
-            self.ids, self.Xs, self.Ys = next(self.dataGenerator)
+            self.Xs, self.Ys = next(self.dataGenerator)
             # shuffle the dataset on load if shuffle is True
             if self.shuffle:
-                randIdxs = torch.randperm(self.chunkSize)
-                self.ids = self.ids[randIdxs]
-                self.Xs = self.Xs[randIdxs]
-                self.Ys = self.Ys[randIdxs]
+                self._shuffle()
 
         return self.Xs[index % self.chunkSize], self.Ys[index % self.chunkSize]
 
@@ -144,11 +157,22 @@ class TsvDataset(LargePatentDataset):
 
 
 if __name__ == "__main__":
-    tokenizer = BertTokenizer.from_pretrained("/data/disk1/SegPOSdata/Bert_Pretrained/bert-base-chinese")
-    ds = CsvDataset("/home/yy/Documents/BLUC_MODEL/100-line-training.csv",
-                    size=99, tokenizer=tokenizer, chunkSize=5)
+    tokenizer = BertTokenizer.from_pretrained("/home/yuan/Documents/bert/bert-base-chinese")
+    csvFile = '/media/yuan/Samsung_T5/Documents/patent/100-line-training.csv'
+    lines = countLinesInFile(csvFile)
+    ds = CsvDataset(csvFile, size=lines-1, tokenizer=tokenizer, chunkSize=5)
 
     for i in range(len(ds)):
         xs, ys = ds[i]
         print(xs)
         print(ys)
+
+    tsvFile = '/media/yuan/Samsung_T5/Documents/patent/dev_test.tsv'
+    lines = countLinesInFile(tsvFile)
+    ts = TsvDataset(tsvFile, size=lines, tokenizer=tokenizer, chunkSize=10)
+
+    for i in range(len(ts)):
+        xs, ys = ts[i]
+        print(xs)
+        print(ys)
+

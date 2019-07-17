@@ -1,0 +1,8 @@
+tqdm==4.31.1
+torch==1.1.0
+pandas==0.24.2
+pytorch_pretrained_bert==0.6.2
+numpy==1.16.2
+fastai==1.0.55
+scikit_learn==0.21.2
+docopt

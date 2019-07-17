@@ -23,3 +23,11 @@ def convertTokensToIds(tokenizer: BertTokenizer, sentence: List[str]):
             i = tokenizer.vocab['[UNK]']
         ids.append(i)
     return ids
+
+
+def countLinesInFile(filepath: str):
+    lines = 0
+    with open(filepath, 'r') as f:
+        for _ in f:
+            lines += 1
+    return lines
