@@ -6,6 +6,8 @@ import os
 from pytorch_pretrained_bert.modeling import BertPreTrainedModel, BertModel, BertConfig
 from torch.nn import BCEWithLogitsLoss
 
+from typing import Optional
+
 module_path = os.path.abspath(os.path.join('..'))
 
 if module_path not in sys.path:
@@ -32,7 +34,12 @@ class BertForMultiLabelSequenceClassification(BertPreTrainedModel):
         self.classifier = torch.nn.Linear(config.hidden_size, num_labels)
         self.apply(self.init_bert_weights)
 
-    def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None):
+    @property
+    def device(self) -> torch.device:
+        return self.classifier.weight.device
+
+    def forward(self, input_ids: torch.Tensor, token_type_ids=None,
+                attention_mask: Optional[torch.Tensor] = None, labels = None):
         _, pooled_output = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
         pooled_output = self.dropout(pooled_output)
         logits = self.classifier(pooled_output)
@@ -57,3 +64,4 @@ class BertForMultiLabelSequenceClassification(BertPreTrainedModel):
         print('loading model from [%s]' % modelpath, file=sys.stderr)
         model = cls(config, num_labels)
         model.load_state_dict(torch.load(modelpath))
+        return model

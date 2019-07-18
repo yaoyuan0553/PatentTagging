@@ -17,11 +17,11 @@ from Utils import countLinesInFile
 
 
 class LargePatentDataset(data.Dataset):
-    def __init__(self, filePath: str, size: int, tokenizer: BertTokenizer,
-                 chunkSize=2**16, shuffle=False):
+    def __init__(self, filePath: str, tokenizer: BertTokenizer,
+                 size: Optional[int] = None, chunkSize=2**16, shuffle=False):
         self.filePath: str = filePath
         self.tokenizer: BertTokenizer = tokenizer
-        self.size: int = size
+        self.size: int = countLinesInFile(filePath) if size is None else size
         self.chunkSize: int = chunkSize
         self.shuffle: bool = shuffle
 
@@ -47,8 +47,8 @@ class LargePatentDataset(data.Dataset):
         self.Ys = self.Ys[randIdxs]
         return randIdxs
 
-    @staticmethod
-    def collate(batch):
+    @classmethod
+    def collate(cls, batch):
         raise NotImplementedError()
 
 
@@ -57,9 +57,9 @@ class CsvDataset(LargePatentDataset):
     Large scale on-the-fly CSV Dataset representation. Only supports **sequential reading**
     Undefined behavior will happen if the dataset is read non-sequentially
     """
-    def __init__(self, filePath: str, size: int, tokenizer: BertTokenizer,
-                 chunkSize=2**16, shuffle=False):
-        super().__init__(filePath, size, tokenizer, chunkSize, shuffle)
+    def __init__(self, filePath: str, tokenizer: BertTokenizer,
+                 size: Optional[int] = None, chunkSize=2**16, shuffle=False):
+        super().__init__(filePath, tokenizer, size=size, chunkSize=chunkSize, shuffle=shuffle)
         # additional data property for indicating unique ids for each data entry
         self.ids: Optional[np.ndarray] = None
 
@@ -109,15 +109,19 @@ class CsvDataset(LargePatentDataset):
 
         return self.Xs[index % self.chunkSize], self.Ys[index % self.chunkSize]
 
-    @staticmethod
-    def collate(batch):
+    @classmethod
+    def collate(cls, batch):
+        """
+        :param batch:
+        :return: sorted batch of dataset by descending sentence lengths
+        """
         return zip(*sorted(batch, key=lambda e: len(e[0]), reverse=True))
 
 
 class TsvDataset(LargePatentDataset):
-    def __init__(self, filePath: str, size: int, tokenizer: BertTokenizer,
-                 chunkSize=2**16, shuffle=False):
-        super().__init__(filePath, size, tokenizer, chunkSize, shuffle)
+    def __init__(self, filePath: str, tokenizer: BertTokenizer,
+                 size: Optional[int] = None, chunkSize=2**16, shuffle=False):
+        super().__init__(filePath, tokenizer, size=size, chunkSize=chunkSize, shuffle=shuffle)
 
     def _chunkLoad(self):
         """
@@ -151,8 +155,12 @@ class TsvDataset(LargePatentDataset):
 
         return self.Xs[index % self.chunkSize], self.Ys[index % self.chunkSize]
 
-    @staticmethod
-    def collate(batch):
+    @classmethod
+    def collate(cls, batch):
+        """
+        :param batch:
+        :return: sorted batch of dataset by descending sentence lengths
+        """
         return zip(*sorted(batch, key=lambda e: len(e[0]), reverse=True))
 
 

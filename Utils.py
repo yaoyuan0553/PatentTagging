@@ -1,26 +1,28 @@
-from typing import List
-from pytorch_pretrained_bert import BertTokenizer
+from typing import List, Callable
 
 
-def padSentences(sentIndices: List[List[int]], padTokenIdx: int):
-    maxLen = max([len(s) for s in sentIndices])
-    return [s + [padTokenIdx] * (maxLen - len(s)) for s in sentIndices]
+def padBatchTokenIds(batchTokenIds: List[List[int]], padTokenIdx: int, maxLen=None):
+    if maxLen is None:
+        maxLen = max([len(s) for s in batchTokenIds])
+    return [s + [padTokenIdx] * (maxLen - len(s)) for s in batchTokenIds]
 
 
-def convertTokensToIds(tokenizer: BertTokenizer, sentence: List[str]):
+def convertTokensToIds(sentence: List[str], unkToken: str,
+                       token2IdFunc: Callable[[str], int]):
     """
     converts a single sentence of tokens to token IDs
-    :param tokenizer: BertTokenizer to be used to tokenize
-    :param sentence: tokenized sentence to be converted to IDs
+    :param (List[str]) sentence: tokenized sentence to be converted to IDs
+    :param (str) unkToken: BertTokenizer to be used to tokenize
+    :param (Callable[[str], int]) token2IdFunc:
     :return: token Ids of the sentence
     """
     ids = []
     for token in sentence:
         try:
-            i = tokenizer.vocab[token]
+            i = token2IdFunc(token)
         except KeyError:
             # if character is not found in vocab, then mark it [UNK]
-            i = tokenizer.vocab['[UNK]']
+            i = token2IdFunc(unkToken)
         ids.append(i)
     return ids
 

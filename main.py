@@ -1,9 +1,14 @@
 
+import torch
 
 from pytorch_pretrained_bert import BertConfig
 from pathlib import Path
 
 from Model import BertForMultiLabelSequenceClassification
+from Dictionary import TagDictionary
+from Dataset import TsvDataset
+from pytorch_pretrained_bert import BertTokenizer
+from Predict import Predictor
 
 
 def main():
@@ -43,11 +48,25 @@ def main():
     }
 
     config_path = '/home/ky/text_classification/BLUC_MODEL/trained_model/config.json'
+    model_path = '/home/ky/text_classification/BLUC_MODEL/trained_model/pytorch_model.bin'
+    tag_path = '/home/ky/text_classification/data/tmp/labels.json'
+    dataset_path = '/home/ky/text_classification/data/dev-20000.tsv'
+    bert_pretrained_path = '/data/disk1/SegPOSdata/Bert_Pretrained/bert-base-chinese'
 
     config_a = BertConfig.from_json_file(config_path)
 
-    model_path = '/home/ky/text_classification/BLUC_MODEL/trained_model/pytorch_model.bin'
+    device = torch.device('cuda:1')
+    print(device)
+
+    tokenizer = BertTokenizer.from_pretrained(bert_pretrained_path)
+    dataset = TsvDataset(dataset_path, tokenizer, chunkSize=2**12)
+    tagDict = TagDictionary.load(tag_path)
     model = BertForMultiLabelSequenceClassification.load(model_path, config_a, 627)
+    predictor = Predictor(model, tagDict, device, maxInputLen=512)
+    acc = predictor.validate(dataset, args['eval_batch_size'])
+
+    print(len(dataset))
+    print(acc)
 
 
 if __name__ == '__main__':
