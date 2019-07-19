@@ -10,7 +10,7 @@ from Utils import padBatchTokenIds
 class TagDictionary(object):
     def __init__(self, padding=False):
         """
-        :param Iterable wordEmbeddings: array-like type, should support append() function
+        :param padding: enable padding
         """
         self.word2idx = dict()
         self.idx2word = []

@@ -19,10 +19,6 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-config_path = '/home/ky/text_classification/BLUC_MODEL/trained_model/config.json'
-
-config_a = BertConfig.from_json_file(config_path)
-
 
 class BertForMultiLabelSequenceClassification(BertPreTrainedModel):
 
