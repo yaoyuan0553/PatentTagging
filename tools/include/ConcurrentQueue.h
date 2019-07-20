@@ -12,6 +12,7 @@
 #include <mutex>    // linker "pthread"
 #include <thread>
 #include <chrono>
+#include <cstddef>
 
 /* implements a thread-safe queue supporting
  * single item push and pops as well as batch push
@@ -19,8 +20,8 @@
  * */
 template <typename T, typename Container = std::deque<T>>
 class ConcurrentQueue {
-    size_t totalPushedItems_ = 0;
-    size_t totalPoppedItems_ = 0;
+    std::size_t totalPushedItems_ = 0;
+    std::size_t totalPoppedItems_ = 0;
 
     std::queue<T> queue_;
     std::mutex mutex_;
@@ -95,21 +96,21 @@ public:
         return ret;
     }
 
-    size_t size()
+    std::size_t size()
     {
         std::lock_guard<decltype(mutex_)> lock(mutex_);
 
         return queue_.size();
     }
 
-    size_t totalPoppedItems()
+    std::size_t totalPoppedItems()
     {
         std::lock_guard<decltype(mutex_)> lock(mutex_);
 
         return totalPoppedItems_;
     }
 
-    size_t totalPushedItems()
+    std::size_t totalPushedItems()
     {
         std::lock_guard<decltype(mutex_)> lock(mutex_);
 

@@ -15,20 +15,18 @@
 #include "PatentTagCollector.h"
 #include "ThreadJob.h"
 
-class FileDistributor : public ThreadJob {
+class FileDistributor : public ThreadJob<> {
     int batchSize_;
     std::string pathFilename_;
 
     ConcurrentQueue<std::string> filenameQueue_;
 
-    void internalRun();
+    void internalRun() override;
 
 public:
 
     explicit FileDistributor(std::string pathFilename, int batchSize = 128):
         pathFilename_(std::move(pathFilename)), batchSize_(batchSize) { }
-
-    void run();
 
     ConcurrentQueue<std::string>& filenameQueue() { return filenameQueue_; }
 };

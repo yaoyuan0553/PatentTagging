@@ -25,9 +25,3 @@ void StatsThread::internalRun(ConcurrentQueue<std::string>& dataQueue)
     bar.finish();
 }
 
-void StatsThread::run(ConcurrentQueue<std::string>& dataQueue)
-{
-    thread_ = std::thread(&StatsThread::internalRun, this, std::ref(dataQueue));
-    threadStarted_ = true;
-}
-

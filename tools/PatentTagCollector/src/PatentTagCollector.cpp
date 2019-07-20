@@ -31,9 +31,3 @@ void PatentTagCollector::internalRun(ConcurrentQueue<std::string>& filenameQueue
     }
     std::cout << "thread " << thread_.get_id() << " finished\n";
 }
-
-void PatentTagCollector::run(ConcurrentQueue<std::string>& filenameQueue)
-{
-    thread_ = std::thread(&PatentTagCollector::internalRun, this, std::ref(filenameQueue));
-    threadStarted_ = true;
-}

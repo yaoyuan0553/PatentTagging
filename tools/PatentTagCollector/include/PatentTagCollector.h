@@ -15,7 +15,7 @@
 #include "ThreadJob.h"
 
 
-class PatentTagCollector : public ThreadJob {
+class PatentTagCollector : public ThreadJob<ConcurrentQueue<std::string>&> {
     friend std::thread;
 
     pugi::xml_document doc_;
@@ -23,12 +23,10 @@ class PatentTagCollector : public ThreadJob {
 
     std::vector<std::string> errorFiles_;
 
-    void internalRun(ConcurrentQueue<std::string>& filenameQueue);
+    void internalRun(ConcurrentQueue<std::string>& filenameQueue) override;
 
 public:
     PatentTagCollector() = default;
-
-    void run(ConcurrentQueue<std::string>& filenameQueue);
 
     auto& uniqueTags() { return walker_.uniqueTags; }
 };

@@ -38,8 +38,3 @@ void FileDistributor::internalRun()
     pathFile.close();
 }
 
-void FileDistributor::run()
-{
-    thread_ = std::thread(&FileDistributor::internalRun, this);
-    threadStarted_ = true;
-}

@@ -6,34 +6,11 @@
 #include <utility>
 #include <thread>
 
+#include "ThreadJob.h"
+
 using namespace std;
 
 
-template <typename... RunArgs>
-class ThreadJob {
-    void runWrapper(RunArgs... runArgs)
-    {
-        cout << "ThreadJob: " << this_thread::get_id() << endl;
-        internalRun(runArgs...);
-    }
-
-protected:
-    thread thread_;
-    virtual void internalRun(RunArgs...) = 0;
-
-    ThreadJob() = default;
-
-public:
-    virtual void run(RunArgs... runArgs)
-    {
-        thread_ = thread(&ThreadJob::runWrapper, this, runArgs...);
-    }
-
-    virtual void wait()
-    {
-        thread_.join();
-    }
-};
 
 
 class SubA : public ThreadJob<string, int> {
@@ -50,6 +27,13 @@ class SubB : public ThreadJob<double> {
     }
 };
 
+class SubC : public ThreadJob<const string&> {
+    void internalRun(const string& str) override
+    {
+        cout << "SubC: " << str << endl;
+    }
+};
+
 
 template <typename... T>
 void test(ThreadJob<T...>& base, T&&... args)
@@ -62,11 +46,15 @@ int main()
 {
     SubA a;
     SubB b;
+    SubC c;
     a.run("blah", 3);
     b.run(3.14);
+    string haha = "haha";
+    c.run(haha);
 
     a.wait();
     b.wait();
+    c.wait();
 
     return 0;
 }

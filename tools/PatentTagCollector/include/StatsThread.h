@@ -12,11 +12,8 @@
 #include "FileDistributor.h"
 
 
-class StatsThread : public ThreadJob {
-    void internalRun(ConcurrentQueue<std::string>& dataQueue);
-
-public:
-    void run(ConcurrentQueue<std::string>& dataQueue);
+class StatsThread : public ThreadJob<ConcurrentQueue<std::string>&> {
+    void internalRun(ConcurrentQueue<std::string>& dataQueue) override;
 };
 
 
