@@ -14,13 +14,13 @@
 
 
 template<typename T>
-auto return_ref_if_ref(T&& t)
-{
-    if constexpr (std::is_reference_v<T>)
-        return std::ref(t);
-    else
-        return std::forward<T>(t);
-}
+struct ref_wrapper_if_ref {
+    using DType = std::conditional_t<std::is_reference_v<T>, std::reference_wrapper<T>, T>;
+    DType value;
+    explicit ref_wrapper_if_ref(T&& t) : value(DType(std::forward(t))) { }
+};
+
+
 
 /* A joinable class wrapper for std::thread
  * this base class should be subclassed
@@ -44,9 +44,7 @@ public:
      * calling this function spawns thread and starts execution */
     virtual void run(RunArgs&&... runArgs)
     {
-        thread_ = std::thread(&ThreadJob::internalRun, this,
-                (typename std::conditional<std::is_reference_v<RunArgs>,
-                        std::reference_wrapper<RunArgs>, RunArgs>)runArgs...);
+        thread_ = std::thread(&ThreadJob::internalRun, this, runArgs...);
         threadStarted_ = true;
     }
 
