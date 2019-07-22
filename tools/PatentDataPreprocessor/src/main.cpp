@@ -7,6 +7,7 @@
 #include <thread>
 
 #include "ThreadJob.h"
+#include "ThreadPool.h"
 
 using namespace std;
 
@@ -114,6 +115,8 @@ struct reference_detector<T&&> {
 class Foo {};
 
 
+
+
 int main()
 {
 //    int x = 5;
@@ -132,8 +135,11 @@ int main()
 //
 //    auto o3 = optional_ref_wrapper<decltype(x)>()(x);
 //    cout << o3 << endl;
+    cout << boolalpha;
+    cout << is_base_of_v<ThreadJob<>, SubA> << endl;
+    cout << is_base_of_template_v<ThreadJob, SubC> << endl;
 
-    test();
+//    test();
 
     return 0;
 }
