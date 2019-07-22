@@ -1,6 +1,7 @@
 //
 // Created by yuan on 7/20/19.
 //
+#pragma once
 
 #ifndef TOOLS_THREADJOB_H
 #define TOOLS_THREADJOB_H
@@ -13,13 +14,36 @@
 #include <type_traits>
 
 
-template<typename T>
-struct ref_wrapper_if_ref {
-    using DType = std::conditional_t<std::is_reference_v<T>, std::reference_wrapper<T>, T>;
-    DType value;
-    explicit ref_wrapper_if_ref(T&& t) : value(DType(std::forward(t))) { }
+template <typename T>
+struct optional_ref_wrapper {
+    static constexpr bool value = false;
+    T operator()(T val) {
+        std::cout << "non-ref\n";
+        return val;
+    }
+
 };
 
+template <typename T>
+struct optional_ref_wrapper<T&> {
+    static constexpr bool value = true;
+
+    std::reference_wrapper<T> operator()(T& val) {
+        std::cout << "l-ref\n";
+        return std::ref(val);
+    }
+};
+
+template <typename T>
+struct optional_ref_wrapper<T&&> {
+    static constexpr bool value = true;
+
+    std::reference_wrapper<T> operator()(T&& val) {
+        std::cout << "r-ref\n";
+        return std::ref(val);
+    }
+
+};
 
 
 /* A joinable class wrapper for std::thread
@@ -44,7 +68,7 @@ public:
      * calling this function spawns thread and starts execution */
     virtual void run(RunArgs&&... runArgs)
     {
-        thread_ = std::thread(&ThreadJob::internalRun, this, runArgs...);
+        thread_ = std::thread(&ThreadJob::internalRun, this, optional_ref_wrapper<RunArgs>()(runArgs)...);
         threadStarted_ = true;
     }
 

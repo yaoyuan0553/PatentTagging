@@ -1,6 +1,7 @@
 //
 // Created by yuan on 7/4/19.
 //
+#pragma once
 
 #ifndef TOOLS_CONCURRENTQUEUE_H
 #define TOOLS_CONCURRENTQUEUE_H

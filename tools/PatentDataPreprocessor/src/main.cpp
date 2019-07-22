@@ -43,15 +43,15 @@ void test()
 {
     SubA a;
     SubB b;
-//    SubC c;
+    SubC c;
     a.run("blah", 3);
     b.run(3.14);
     string haha = "haha";
-//    c.run(haha);
+    c.run(haha);
 
     a.wait();
     b.wait();
-//    c.wait();
+    c.wait();
 
 }
 
@@ -82,23 +82,58 @@ template<class T, typename = void_t<>>
 typename item_return<T&>::type bar(T& val) { return ref(val); }
 
 
-template <typename T>
-void reference_detector(T) { cout << "base: " << is_reference_v<T> << endl; }
 
-template <typename T>
-enable_if_t<is_reference_v<T>> reference_detector(T&) { cout << "reference!\n"; }
+template<typename T>
+struct reference_detector {
+    static constexpr T value = T();
+    reference_detector()
+    {
+        cout << "not-reference\n";
+    }
+};
+
+template<typename T>
+struct reference_detector<T&> {
+    static const reference_wrapper<T> value = ref(T());
+    reference_detector()
+    {
+        cout << "l-value reference\n";
+    }
+};
+
+template<typename T>
+struct reference_detector<T&&> {
+    static constexpr T&& value = T();
+    reference_detector()
+    {
+        cout << "r-value reference\n";
+    }
+};
 
 
+class Foo {};
 
 
 int main()
 {
-    reference_detector(3);
-    int x = 2;
-    reference_detector(x);
-    int& y = x;
-    reference_detector(y);
+//    int x = 5;
+//
+//    cout << boolalpha;
+//    cout << optional_ref_wrapper<int>::value << '\n';
+//    cout << optional_ref_wrapper<int&>::value << '\n';
+//
+//    auto o1 = optional_ref_wrapper<int>()(x);
+//    cout << o1 << endl;
+//    cout << x << endl;
+//
+//    auto o2 = optional_ref_wrapper<int&>()(x);
+//    cout << o2 << endl;
+//    cout << x << endl;
+//
+//    auto o3 = optional_ref_wrapper<decltype(x)>()(x);
+//    cout << o3 << endl;
 
+    test();
 
     return 0;
 }

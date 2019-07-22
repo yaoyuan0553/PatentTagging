@@ -1,6 +1,5 @@
 cmake-*/
 
 bin/
-debug/
 
 .clion*

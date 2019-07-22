@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
-add_executable(PatentTagCollector src/main.cpp src/Semaphore.cpp include/Semaphore.h src/PatentTagCollector.cpp include/PatentTagCollector.h src/PatentTagWalker.cpp include/PatentTagWalker.h src/FileDistributor.cpp include/FileDistributor.h src/ThreadDispatcher.cpp include/ThreadDispatcher.h src/StatsThread.cpp include/StatsThread.h)
+add_executable(PatentTagCollector src/main.cpp src/Semaphore.cpp src/PatentTagCollector.cpp src/PatentTagWalker.cpp src/FileDistributor.cpp src/ThreadDispatcher.cpp)
 
 target_include_directories(PatentTagCollector PRIVATE
         ${CMAKE_SOURCE_DIR}/cpptqdm
