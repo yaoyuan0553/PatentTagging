@@ -18,14 +18,14 @@ void PatentTagCollector::internalRun(ConcurrentQueue<std::string>& filenameQueue
         // std::cout << "got element: " << filename << "quit: " << quit << "\n";
         if (quit) break;
 
-        pugi::xml_parse_result result = doc_.load_file(filename.c_str());
+        pugi::xml_parse_result result = doc_->load_file(filename.c_str());
         if (!result) {
             errorFiles_.push_back(filename);
             continue;
         }
         walker_.curFilename = filename.c_str();
         walker_.isIrregular = false;
-        doc_.traverse(walker_);
+        doc_->traverse(walker_);
         if (walker_.isIrregular)
             errorFiles_.push_back(filename);
     }

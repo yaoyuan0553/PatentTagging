@@ -18,7 +18,7 @@
 class PatentTagCollector : public ThreadJob<ConcurrentQueue<std::string>&> {
     friend std::thread;
 
-    pugi::xml_document doc_;
+    pugi::xml_document* doc_;
     PatentTagWalker walker_;
 
     std::vector<std::string> errorFiles_;
@@ -26,7 +26,13 @@ class PatentTagCollector : public ThreadJob<ConcurrentQueue<std::string>&> {
     void internalRun(ConcurrentQueue<std::string>& filenameQueue) override;
 
 public:
-    PatentTagCollector() = default;
+    explicit PatentTagCollector(ConcurrentQueue<std::string>& filenameQueue) : ThreadJob(filenameQueue)
+    {
+        doc_ = new pugi::xml_document;
+    }
+    ~PatentTagCollector() { delete doc_; }
+
+    PatentTagCollector(PatentTagCollector&&) = default;
 
     auto& uniqueTags() { return walker_.uniqueTags; }
 };

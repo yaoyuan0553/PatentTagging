@@ -12,11 +12,13 @@
 using namespace std;
 
 
-class SubA : public ThreadJob<string, int> {
-    void internalRun(string str, int i) override
+class SubA : public ThreadJob<string&, int> {
+    void internalRun(string& str, int i) override
     {
         cout << "SubA: " << str << " " << i << endl;
     }
+public:
+    SubA(string& str, int i) : ThreadJob(forward<string&>(str), forward<int>(i)) { }
 };
 
 class SubB : public ThreadJob<double> {
@@ -24,6 +26,8 @@ class SubB : public ThreadJob<double> {
     {
         cout << "SubB: " << x << endl;
     }
+public:
+    explicit SubB(double x) : ThreadJob(forward<double>(x)) { }
 };
 
 class SubC : public ThreadJob<string&> {
@@ -31,6 +35,26 @@ class SubC : public ThreadJob<string&> {
     {
         cout << "SubC: " << str << endl;
     }
+public:
+    explicit SubC(string& str) : ThreadJob(str) { }
+};
+
+//class SubD : public ThreadJob<string&&> {
+//    void internalRun(string&& str) override
+//    {
+//        cout << "SubD: " << str << endl;
+//    }
+//public:
+//    explicit SubD(string&& str) : ThreadJob(std::forward<string>(str)) { }
+//};
+
+class SubE : public ThreadJob<> {
+    void internalRun() override
+    {
+        cout << "SubE\n";
+    }
+public:
+    SubE() = default;
 };
 
 
@@ -42,18 +66,28 @@ void wrapper(ThreadJob<T...>& base, T&&... args)
 
 void test()
 {
-    SubA a;
-    SubB b;
-    SubC c;
-    a.run("blah", 3);
-    b.run(3.14);
+    string hehe = "hehe";
+    SubA a(hehe, 3);
+    SubB b(3.14);
+//    a.run("blah", 3);
+//    b.run(3.14);
     string haha = "haha";
-    c.run(haha);
+    SubC c(haha);
+
+//    SubD d("xxx");
+    SubE e;
+//    c.run(haha);
+    a.run();
+    b.run();
+    c.run();
+//    d.run();
+    e.run();
 
     a.wait();
     b.wait();
     c.wait();
-
+//    d.wait();
+    e.wait();
 }
 
 // in the normal case, just the identity
@@ -135,11 +169,11 @@ int main()
 //
 //    auto o3 = optional_ref_wrapper<decltype(x)>()(x);
 //    cout << o3 << endl;
-    cout << boolalpha;
-    cout << is_base_of_v<ThreadJob<>, SubA> << endl;
-    cout << is_base_of_template_v<ThreadJob, SubC> << endl;
+//    cout << boolalpha;
+//    cout << is_base_of_v<ThreadJob<>, SubA> << endl;
+//    cout << is_base_of_template_v<ThreadJob, SubC> << endl;
 
-//    test();
+    test();
 
     return 0;
 }

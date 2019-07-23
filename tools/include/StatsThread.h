@@ -33,6 +33,9 @@ class StatsThread : public ThreadJob<ConcurrentQueue<std::string>&> {
 
         bar.finish();
     }
+
+public:
+    explicit StatsThread(ConcurrentQueue<std::string>& dataQueue) : ThreadJob(dataQueue) { }
 };
 
 

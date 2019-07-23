@@ -11,6 +11,7 @@
 #include <type_traits>
 
 #include "ThreadJob.h"
+#include "ConcurrentQueue.h"
 
 
 template <template <typename...> class Base, typename Derived>
@@ -30,15 +31,48 @@ template <template <typename...> class Base, typename Derived>
 constexpr bool is_base_of_template_v = is_base_of_template<Base, Derived>::value;
 
 
-template <typename... ThreadJobSubClass>
-class ThreadPool {
-    static_assert(std::conjunction_v<is_base_of_template<ThreadJob, ThreadJobSubClass>...>,
-            "Argument(s) of ThreadPool must be subclass(es) of ThreadJob!");
+struct ThreadPoolInterface {
+    virtual void runAll() = 0;
+    virtual void waitAll() = 0;
+};
+
+
+template <typename DataType, typename ProducerThread, typename ConsumerThread>
+class PCThreadPool : public ThreadPoolInterface {
+    static_assert(std::conjunction_v<
+            is_base_of_template<ThreadJob, ProducerThread>,
+            is_base_of_template<ThreadJob, ConsumerThread>>,
+        "Template argument(s) of PCThreadPool must be subclass(es) of ThreadJob!");
+
+    ConcurrentQueue<DataType> dataQueue_;
+    std::vector<ProducerThread> producers_;
+    std::vector<ConsumerThread> consumers_;
+
 protected:
-    ThreadPool() = default;
+
+    template <typename ProducerInitFn, typename ConsumerInitFn>
+    PCThreadPool(int pN, ProducerInitFn producerInitFn, int cN, ConsumerInitFn consumerInitFn)
+    {
+        static_assert(std::conjunction_v<
+                std::is_invocable<ProducerInitFn, decltype(producers_)&>,
+                std::is_invocable<ConsumerInitFn, decltype(consumers_)&>>,
+            "Expects function of type with arguments ProducerInitFn(vector<ProducerThread>&), "
+            "and ConsumerInitFn(vector<ConsumerThread>&>)");
+        producers_.reserve(pN);
+        consumers_.reserve(cN);
+        ProducerInitFn(this->producers_);
+        ConsumerInitFn(this->consumers_);
+    }
+
 
 public:
-    void waitAll()
+    void runAll() override
+    {
+        for (auto& pt : producers_)
+            pt.run();
+    }
+
+    void waitAll() override
     {
     }
 };
