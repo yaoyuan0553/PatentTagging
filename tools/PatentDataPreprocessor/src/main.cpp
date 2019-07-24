@@ -3,177 +3,63 @@
 //
 #include <iostream>
 #include <string>
-#include <utility>
-#include <thread>
+#include <stdio.h>
 
 #include "ThreadJob.h"
 #include "ThreadPool.h"
 
+#include "StatsThread.h"
+#include "XmlFileReader.h"
+#include "PatentInfoCollector.h"
+#include "PatentInfoWriter.h"
+
 using namespace std;
 
 
-class SubA : public ThreadJob<string&, int> {
-    void internalRun(string& str, int i) override
-    {
-        cout << "SubA: " << str << " " << i << endl;
-    }
-public:
-    SubA(string& str, int i) : ThreadJob(forward<string&>(str), forward<int>(i)) { }
-};
-
-class SubB : public ThreadJob<double> {
-    void internalRun(double x) override
-    {
-        cout << "SubB: " << x << endl;
-    }
-public:
-    explicit SubB(double x) : ThreadJob(forward<double>(x)) { }
-};
-
-class SubC : public ThreadJob<string&> {
-    void internalRun(string& str) override
-    {
-        cout << "SubC: " << str << endl;
-    }
-public:
-    explicit SubC(string& str) : ThreadJob(str) { }
-};
-
-//class SubD : public ThreadJob<string&&> {
-//    void internalRun(string&& str) override
-//    {
-//        cout << "SubD: " << str << endl;
-//    }
-//public:
-//    explicit SubD(string&& str) : ThreadJob(std::forward<string>(str)) { }
-//};
-
-class SubE : public ThreadJob<> {
-    void internalRun() override
-    {
-        cout << "SubE\n";
-    }
-public:
-    SubE() = default;
-};
-
-
-template <typename... T>
-void wrapper(ThreadJob<T...>& base, T&&... args)
+void printUsageAndExit(const char* program)
 {
-    base.run(forward<T>(args)...);
+    printf("Usage:\n\t\t%s <path-file> <output-file> <num-threads>\n", program);
+    exit(-1);
 }
 
-void test()
+int main(int argc, char* argv[])
 {
-    string hehe = "hehe";
-    SubA a(hehe, 3);
-    SubB b(3.14);
-//    a.run("blah", 3);
-//    b.run(3.14);
-    string haha = "haha";
-    SubC c(haha);
+    if (argc != 4)
+        printUsageAndExit(argv[0]);
 
-//    SubD d("xxx");
-    SubE e;
-//    c.run(haha);
-    a.run();
-    b.run();
-    c.run();
-//    d.run();
-    e.run();
+    string pathFilename(argv[1]);
+    string outputFilename(argv[2]);
+    int nThreads = atoi(argv[3]);
 
-    a.wait();
-    b.wait();
-    c.wait();
-//    d.wait();
-    e.wait();
-}
+    ConcurrentQueue<string> filenameQueue;
+    XmlFileReader xmlFileReader(pathFilename, filenameQueue);
 
-// in the normal case, just the identity
-template<class T>
-struct item_return {
-    using type = T;
-};
+    xmlFileReader.runOnMain();
 
-template <class T>
-struct item_return<T&> {
-    using type = reference_wrapper<T>;
-};
+    ConcurrentQueue<string> outputInfoQueue;
+    ThreadPool producers;
+    for (int i = 0; i < nThreads; i++)
+        producers.add(new PatentInfoCollector(filenameQueue, outputInfoQueue));
 
-template<class T>
-typename item_return<T>::type foo() { return T(); }
+    ThreadPool consumers;
+    consumers.add(new PatentInfoWriter(outputFilename, outputInfoQueue));
 
-template<>
-struct item_return<float> { using type = int; };
+    StatsThread<string> readStats(filenameQueue);
+    StatsThread<string> writeStats(outputInfoQueue);
 
-template<>
-int foo<float>() { return 42; }
+    producers.runAll();
+    readStats.run();
+    consumers.runAll();
+    writeStats.run();
 
-template<class T, typename = void_t<>>
-typename item_return<T>::type bar(T val) { return val; }
+    for (int i = 0; i < nThreads; i++)
+        producers.waitAll();
+    outputInfoQueue.setQuitSignal();
+    readStats.wait();
+    consumers.waitAll();
+    writeStats.wait();
 
-template<class T, typename = void_t<>>
-typename item_return<T&>::type bar(T& val) { return ref(val); }
-
-
-
-template<typename T>
-struct reference_detector {
-    static constexpr T value = T();
-    reference_detector()
-    {
-        cout << "not-reference\n";
-    }
-};
-
-template<typename T>
-struct reference_detector<T&> {
-    static const reference_wrapper<T> value = ref(T());
-    reference_detector()
-    {
-        cout << "l-value reference\n";
-    }
-};
-
-template<typename T>
-struct reference_detector<T&&> {
-    static constexpr T&& value = T();
-    reference_detector()
-    {
-        cout << "r-value reference\n";
-    }
-};
-
-
-class Foo {};
-
-
-
-
-int main()
-{
-//    int x = 5;
-//
-//    cout << boolalpha;
-//    cout << optional_ref_wrapper<int>::value << '\n';
-//    cout << optional_ref_wrapper<int&>::value << '\n';
-//
-//    auto o1 = optional_ref_wrapper<int>()(x);
-//    cout << o1 << endl;
-//    cout << x << endl;
-//
-//    auto o2 = optional_ref_wrapper<int&>()(x);
-//    cout << o2 << endl;
-//    cout << x << endl;
-//
-//    auto o3 = optional_ref_wrapper<decltype(x)>()(x);
-//    cout << o3 << endl;
-//    cout << boolalpha;
-//    cout << is_base_of_v<ThreadJob<>, SubA> << endl;
-//    cout << is_base_of_template_v<ThreadJob, SubC> << endl;
-
-    test();
+    cout << "finished\n";
 
     return 0;
 }

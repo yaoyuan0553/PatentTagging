@@ -14,66 +14,130 @@
 #include "ConcurrentQueue.h"
 
 
-template <template <typename...> class Base, typename Derived>
-struct is_base_of_template_impl {
-private:
-    template<typename... Ts>
-    static constexpr std::true_type test(const Base<Ts...> *);
-    static constexpr std::false_type test(...);
-public:
-    using type = decltype(test(std::declval<Derived*>()));
-};
-
-template <template <typename...> class Base, typename Derived>
-using is_base_of_template = typename is_base_of_template_impl<Base, Derived>::type;
-
-template <template <typename...> class Base, typename Derived>
-constexpr bool is_base_of_template_v = is_base_of_template<Base, Derived>::value;
-
-
 struct ThreadPoolInterface {
     virtual void runAll() = 0;
     virtual void waitAll() = 0;
 };
 
+struct ThreadPoolUnit : ThreadPoolInterface {
+    virtual void add(ThreadInterface*) = 0;
+};
 
-template <typename DataType, typename ProducerThread, typename ConsumerThread>
-class PCThreadPool : public ThreadPoolInterface {
-    static_assert(std::conjunction_v<
-            is_base_of_template<ThreadJob, ProducerThread>,
-            is_base_of_template<ThreadJob, ConsumerThread>>,
-        "Template argument(s) of PCThreadPool must be subclass(es) of ThreadJob!");
+struct ThreadPoolCollection : public ThreadPoolInterface { };
 
-    ConcurrentQueue<DataType> dataQueue_;
-    std::vector<ProducerThread> producers_;
-    std::vector<ConsumerThread> consumers_;
 
-protected:
+class ThreadPool : public ThreadPoolUnit, private std::vector<ThreadInterface*> {
+public:
+/*
+    */
+/* initialize threads with a callback function *//*
 
-    template <typename ProducerInitFn, typename ConsumerInitFn>
-    PCThreadPool(int pN, ProducerInitFn producerInitFn, int cN, ConsumerInitFn consumerInitFn)
+    template <typename ThreadInitFn>
+    ThreadPool(int n, ThreadInitFn&& threadInitFn)
     {
-        static_assert(std::conjunction_v<
-                std::is_invocable<ProducerInitFn, decltype(producers_)&>,
-                std::is_invocable<ConsumerInitFn, decltype(consumers_)&>>,
-            "Expects function of type with arguments ProducerInitFn(vector<ProducerThread>&), "
-            "and ConsumerInitFn(vector<ConsumerThread>&>)");
-        producers_.reserve(pN);
-        consumers_.reserve(cN);
-        ProducerInitFn(this->producers_);
-        ConsumerInitFn(this->consumers_);
+        static_assert(std::is_invocable_v<ThreadInitFn, decltype(threadPool_)&>,
+                "ThreadInitFn expects argument type of (vector<ThreadInterface>&)");
+        threadPool_.reserve(n);
+        threadInitFn(threadPool_);
+    }
+*/
+    ThreadPool() = default;
+
+    ~ThreadPool() = default;
+
+    ThreadPool(const ThreadPool&) = default;
+
+    ThreadPool(ThreadPool&& threadPool) = default;
+
+    void add(ThreadInterface* t) override
+    {
+        push_back(t);
     }
 
-
-public:
     void runAll() override
     {
-        for (auto& pt : producers_)
-            pt.run();
+        for (ThreadInterface* t : *this)
+            t->run();
+    }
+    void waitAll() override
+    {
+        for (ThreadInterface* t : *this)
+            t->wait();
+    }
+};
+
+
+template <typename DataPool = void>
+class PCThreadPool : public ThreadPoolCollection {
+protected:
+    DataPool& dataPool_;
+    ThreadPool producers_;
+    ThreadPool consumers_;
+public:
+    explicit PCThreadPool(DataPool& dataPool) : dataPool_(dataPool) { }
+
+    PCThreadPool(ThreadPool&& producers, ThreadPool&& consumers, DataPool& dataPool) :
+        producers_(std::move(producers)), consumers_(std::move(consumers)),
+        dataPool_(dataPool) { }
+
+    PCThreadPool(PCThreadPool&&) noexcept = default;
+
+    void addProducer(ThreadInterface* t)
+    {
+        producers_.add(t);
+    }
+
+    void addConsumer(ThreadInterface* t)
+    {
+        consumers_.add(t);
+    }
+
+    void runAll() override
+    {
+        producers_.runAll();
+        consumers_.runAll();
     }
 
     void waitAll() override
     {
+        producers_.waitAll();
+        consumers_.waitAll();
+    }
+};
+
+template <>
+class PCThreadPool<> : public ThreadPoolCollection {
+protected:
+    ThreadPool producers_;
+    ThreadPool consumers_;
+public:
+    PCThreadPool() = default;
+
+    PCThreadPool(ThreadPool&& producers, ThreadPool&& consumers) :
+            producers_(std::move(producers)), consumers_(std::move(consumers)) { }
+
+    PCThreadPool(PCThreadPool&&) noexcept = default;
+
+    void addProducer(ThreadInterface* t)
+    {
+        producers_.add(t);
+    }
+
+    void addConsumer(ThreadInterface* t)
+    {
+        consumers_.add(t);
+    }
+
+    void runAll() override
+    {
+        producers_.runAll();
+        consumers_.runAll();
+    }
+
+    void waitAll() override
+    {
+        producers_.waitAll();
+        consumers_.waitAll();
     }
 };
 

@@ -15,39 +15,21 @@
 #include <functional>
 #include <tuple>
 
-template <typename T>
-struct optional_ref_wrapper {
-    static constexpr bool value = false;
-    using type = T;
-    type operator()(T val) {
-        std::cout << "non-ref\n";
-        return val;
-    }
+#include "MetaFunctionHelpers.h"
 
+
+/* An interface class defining abstract methods
+ * all child classes should support */
+struct ThreadInterface {
+    /* run current thread function in main */
+    virtual void runOnMain() = 0;
+    /* starts the current thread */
+    virtual void run() = 0;
+    /* blocks the caller until this thread finishes */
+    virtual void wait() = 0;
+
+    virtual ~ThreadInterface() = default;
 };
-
-template <typename T>
-struct optional_ref_wrapper<T&> {
-    static constexpr bool value = true;
-    using type = std::reference_wrapper<T>;
-    type operator()(T& val) {
-        std::cout << "l-ref\n";
-        return std::ref(val);
-    }
-};
-
-template <typename T>
-struct optional_ref_wrapper<T&&> {
-    static constexpr bool value = true;
-    using type = T&&;
-    type operator()(T&& val) {
-        std::cout << "r-ref\n";
-        return std::forward<T>(val);
-    }
-};
-
-template <typename T>
-using optional_ref_wrapper_t = typename optional_ref_wrapper<T>::type;
 
 
 /* A joinable class wrapper for std::thread
@@ -55,12 +37,8 @@ using optional_ref_wrapper_t = typename optional_ref_wrapper<T>::type;
  * forbidding any construction without subclasses
  * */
 template <typename... RunArgs>
-class ThreadJob {
+class ThreadJob : public ThreadInterface {
     std::tuple<optional_ref_wrapper_t<RunArgs>...> argTuple_;
-/*    void initThread(RunArgs&&... runArgs)
-    {
-        thread_ = std::thread(&ThreadJob::internalRun, this, runArgs...);
-    }*/
 protected:
     std::thread thread_;
     bool threadStarted_ = false;
@@ -70,12 +48,8 @@ protected:
      * upon starting of the thread, this function will execute*/
     virtual void internalRun(RunArgs...) = 0;
 
-    explicit ThreadJob(RunArgs&&... runArgs) : argTuple_{optional_ref_wrapper<RunArgs>()(runArgs)...}
-    {
-//        initThread = [this, runArgs...] () mutable {
-//            this->thread_ = std::thread(&ThreadJob::internalRun, this, optional_ref_wrapper<RunArgs>()(std::forward<RunArgs>(runArgs))...);
-//        };
-    }
+    explicit ThreadJob(RunArgs&&... runArgs) :
+        argTuple_{optional_ref_wrapper<RunArgs>()(std::forward<RunArgs>(runArgs))...} { }
 
 public:
     /* virtual run function with default values, can be override in subclasses.
@@ -85,12 +59,18 @@ public:
         thread_ = std::thread(&ThreadJob::internalRun, this, optional_ref_wrapper<RunArgs>()(runArgs)...);
         threadStarted_ = true;
     }*/
-    ThreadJob(ThreadJob&&) = default;
+    ThreadJob(ThreadJob&&) noexcept = default;
 
-    virtual void run()
+    ~ThreadJob() override = default;
+
+    void runOnMain() override
     {
-//        initThread();
-//        std::apply(&ThreadJob::initThread, std::tuple_cat(std::make_tuple(this), argTuple_));
+        std::apply(&ThreadJob::internalRun, std::tuple_cat(
+                std::make_tuple(this), argTuple_));
+    }
+
+    void run() override
+    {
         thread_ = std::make_from_tuple<std::thread>(std::tuple_cat(
                 std::make_tuple(&ThreadJob::internalRun, this), argTuple_));
         threadStarted_ = true;
@@ -99,7 +79,7 @@ public:
     /* virtual run function with default values, can be override in subclasses.
      * blocks the caller until current thread finishes
      * WARNING: this function will throw if called before thread starts */
-    virtual void wait()
+    void wait() override
     {
         if (!threadStarted_) {
             std::cerr << "Thread must be started (run(...)) before call on wait()\n";

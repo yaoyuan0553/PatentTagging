@@ -12,18 +12,19 @@
 
 #include "ThreadJob.h"
 #include "ConcurrentQueue.h"
-#include "FileDistributor.h"
 
 
-class StatsThread : public ThreadJob<ConcurrentQueue<std::string>&> {
-    void internalRun(ConcurrentQueue<std::string>& dataQueue) override
+template <typename T>
+class StatsThread : public ThreadJob<> {
+    ConcurrentQueue<T>& dataQueue_;
+    void internalRun() override
     {
         tqdm bar;
         // bar.set_theme_line();
         for (;;)
         {
-            auto i = dataQueue.totalPoppedItems();
-            auto n = dataQueue.totalPushedItems();
+            auto i = dataQueue_.totalPoppedItems();
+            auto n = dataQueue_.totalPushedItems();
             bar.progress(i, n);
             if (i == n)
                 break;
@@ -35,7 +36,7 @@ class StatsThread : public ThreadJob<ConcurrentQueue<std::string>&> {
     }
 
 public:
-    explicit StatsThread(ConcurrentQueue<std::string>& dataQueue) : ThreadJob(dataQueue) { }
+    explicit StatsThread(ConcurrentQueue<T>& dataQueue) : dataQueue_(dataQueue) { }
 };
 
 
