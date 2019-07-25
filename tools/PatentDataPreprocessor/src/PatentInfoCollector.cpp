@@ -10,9 +10,13 @@
 namespace fs = std::filesystem;
 
 void PatentInfoCollector::internalRun(ConcurrentQueue<std::string>& filenameQueue,
-                 ConcurrentQueue<std::string>& outputInfoQueue)
+                 ConcurrentQueue<std::string>& outputInfoQueue,
+                 ConcurrentQueue<std::string>& splitAbstractQueue)
 {
 //    std::cout << "thread " << std::this_thread::get_id() << " started\n";
+    std::vector<std::string> batchInfo, splitAbstract;
+    batchInfo.reserve(batchSize_);
+    splitAbstract.reserve(batchSize_);
     int bN = 0;
     for (;;) {
         pugi::xml_document doc;
@@ -30,8 +34,10 @@ void PatentInfoCollector::internalRun(ConcurrentQueue<std::string>& filenameQueu
         doc.traverse(walker_);
 
         if (++bN == batchSize_) {
-            outputInfoQueue.push(batchInfo_);
-            batchInfo_.clear();
+            outputInfoQueue.push(batchInfo);
+            splitAbstractQueue.push(splitAbstract);
+            batchInfo.clear();
+            splitAbstract.clear();
             bN = 0;
         }
 
@@ -42,11 +48,12 @@ void PatentInfoCollector::internalRun(ConcurrentQueue<std::string>& filenameQueu
         info[info.size() - 1] = '\t';
         info += walker_.abstract + '\n';
 
-        batchInfo_.push_back(info);
+        batchInfo.push_back(info);
+        splitAbstract.push_back(walker_.splitAbstract + "\n\n");
 
         if (walker_.isIrregular)
             errorFiles_.push_back(filename);
     }
-    if (!batchInfo_.empty())
-        outputInfoQueue.push(batchInfo_);
+    if (!batchInfo.empty())
+        outputInfoQueue.push(batchInfo);
 }

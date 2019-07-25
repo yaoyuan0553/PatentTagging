@@ -31,6 +31,7 @@ std::string ReplaceDelimiter(std::string&& str)
 }
 
 
+template <char = 0, char = 0>
 std::string ReplaceDelimiter(std::string&& str, char newDelimiter, char oldDelimiter)
 {
     using namespace std;

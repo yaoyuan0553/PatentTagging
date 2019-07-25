@@ -18,18 +18,20 @@ using namespace std;
 
 void printUsageAndExit(const char* program)
 {
-    printf("Usage:\n\t\t%s <path-file> <output-file> <num-threads>\n", program);
+    printf("Usage:\n\t\t%s <path-file> <tag-abstract-output-file> "
+           "<split-abstract-output-file> <num-threads>\n", program);
     exit(-1);
 }
 
 int main(int argc, char* argv[])
 {
-    if (argc != 4)
+    if (argc != 5)
         printUsageAndExit(argv[0]);
 
     string pathFilename(argv[1]);
-    string outputFilename(argv[2]);
-    int nThreads = atoi(argv[3]);
+    string infoOutputFilename(argv[2]);
+    string splitAbstractOutputFilename(argv[3]);
+    int nThreads = atoi(argv[4]);
 
     ConcurrentQueue<string> filenameQueue;
     XmlFileReader xmlFileReader(pathFilename, filenameQueue);
@@ -37,12 +39,15 @@ int main(int argc, char* argv[])
     xmlFileReader.runOnMain();
 
     ConcurrentQueue<string> outputInfoQueue;
+    ConcurrentQueue<string> splitAbstractQueue;
+
     ThreadPool producers;
     for (int i = 0; i < nThreads; i++)
-        producers.add(new PatentInfoCollector(filenameQueue, outputInfoQueue));
+        producers.add(new PatentInfoCollector(filenameQueue, outputInfoQueue, splitAbstractQueue));
 
     ThreadPool consumers;
-    consumers.add(new PatentInfoWriter(outputFilename, outputInfoQueue));
+    consumers.add(new PatentInfoWriter(infoOutputFilename, outputInfoQueue));
+    consumers.add(new PatentInfoWriter(splitAbstractOutputFilename, splitAbstractQueue));
 
 //    StatsThread<string> readStats(filenameQueue);
     StatsThread<string, true> writeStats(outputInfoQueue, filenameQueue.totalPushedItems());
@@ -55,6 +60,7 @@ int main(int argc, char* argv[])
     for (int i = 0; i < nThreads; i++)
         producers.waitAll();
     outputInfoQueue.setQuitSignal();
+    splitAbstractQueue.setQuitSignal();
 //    readStats.wait();
     consumers.waitAll();
     writeStats.wait();

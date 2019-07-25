@@ -29,17 +29,17 @@ class PatentInfoCollector : public ThreadJob<
     std::vector<std::string> errorFiles_;
 
     int batchSize_;
-    std::vector<std::string> batchInfo_;
 
     void internalRun(ConcurrentQueue<std::string>& filenameQueue,
             ConcurrentQueue<std::string>& outputInfoQueue,
-            ConcurrentQueue<std::string>& ) override;
+            ConcurrentQueue<std::string>& splitAbstractQueue) override;
 
 public:
-    explicit PatentInfoCollector(ConcurrentQueue<std::string>& filenameQueue,
-            ConcurrentQueue<std::string>& outputInfoQueue, int batchSize = 128) :
-        ThreadJob(filenameQueue, outputInfoQueue), batchSize_(batchSize)
-        { batchInfo_.reserve(batchSize_); }
+    PatentInfoCollector(ConcurrentQueue<std::string>& filenameQueue,
+            ConcurrentQueue<std::string>& outputInfoQueue,
+            ConcurrentQueue<std::string>& splitAbstractQueue, int batchSize = 128) :
+        ThreadJob(filenameQueue, outputInfoQueue, splitAbstractQueue), batchSize_(batchSize)
+        { }
 };
 
 
