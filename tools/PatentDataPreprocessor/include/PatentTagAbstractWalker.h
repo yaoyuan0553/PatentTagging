@@ -11,11 +11,18 @@
 
 #include <pugixml.hpp>
 
+#include "Utility.h"
+
 
 struct PatentTagAbstractWalker : pugi::xml_tree_walker {
 
+    static std::initializer_list<char32_t> separators;
+
+    ParagraphSplit split;
+
     std::unordered_set<std::string> uniqueTags;
-    std::string abstract = "";
+    std::string abstract;
+    std::string splitAbstract;
 
     bool isIrregular = false;
 
@@ -23,6 +30,8 @@ struct PatentTagAbstractWalker : pugi::xml_tree_walker {
 
     /* resets patent tag to initial stage */
     void reset();
+
+    PatentTagAbstractWalker() : split(std::move(separators)) { }
 };
 
 

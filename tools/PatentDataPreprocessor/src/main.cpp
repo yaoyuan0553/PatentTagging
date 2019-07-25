@@ -44,18 +44,18 @@ int main(int argc, char* argv[])
     ThreadPool consumers;
     consumers.add(new PatentInfoWriter(outputFilename, outputInfoQueue));
 
-    StatsThread<string> readStats(filenameQueue);
-    StatsThread<string> writeStats(outputInfoQueue);
+//    StatsThread<string> readStats(filenameQueue);
+    StatsThread<string, true> writeStats(outputInfoQueue, filenameQueue.totalPushedItems());
 
     producers.runAll();
-    readStats.run();
+//    readStats.run();
     consumers.runAll();
     writeStats.run();
 
     for (int i = 0; i < nThreads; i++)
         producers.waitAll();
     outputInfoQueue.setQuitSignal();
-    readStats.wait();
+//    readStats.wait();
     consumers.waitAll();
     writeStats.wait();
 

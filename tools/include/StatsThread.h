@@ -14,19 +14,24 @@
 #include "ConcurrentQueue.h"
 
 
-template <typename T>
+template <typename T, bool presetTotal = false>
 class StatsThread : public ThreadJob<> {
     ConcurrentQueue<T>& dataQueue_;
+    size_t total_ = 0;
     void internalRun() override
     {
         tqdm bar;
-        // bar.set_theme_line();
         for (;;)
         {
             auto i = dataQueue_.totalPoppedItems();
-            auto n = dataQueue_.totalPushedItems();
-            bar.progress(i, n);
-            if (i == n)
+            if constexpr (presetTotal) {
+                bar.progress(i, total_);
+            }
+            else {
+                auto n = dataQueue_.totalPushedItems();
+                bar.progress(i, n);
+            }
+            if (dataQueue_.isQuit())
                 break;
             // update every 1 seconds
             std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -36,7 +41,14 @@ class StatsThread : public ThreadJob<> {
     }
 
 public:
-    explicit StatsThread(ConcurrentQueue<T>& dataQueue) : dataQueue_(dataQueue) { }
+    explicit StatsThread(ConcurrentQueue<T>& dataQueue) : dataQueue_(dataQueue)
+    {
+        static_assert(!presetTotal, "presetTotal must be set to false to use this overload\n");
+    }
+    StatsThread(ConcurrentQueue<T>& dataQueue, int total) : dataQueue_(dataQueue), total_(total)
+    {
+        static_assert(presetTotal, "presetTotal must be set to true to use this overload\n");
+    }
 };
 
 

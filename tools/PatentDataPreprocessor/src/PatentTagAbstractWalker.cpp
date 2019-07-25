@@ -5,8 +5,14 @@
 #include "PatentTagAbstractWalker.h"
 
 #include <string>
+#include <sstream>
 #include <string.h>
 
+#include "Utility.h"
+
+std::initializer_list<char32_t> PatentTagAbstractWalker::separators = {
+        u'。'
+};
 
 bool PatentTagAbstractWalker::for_each(pugi::xml_node &node)
 {
@@ -20,9 +26,11 @@ bool PatentTagAbstractWalker::for_each(pugi::xml_node &node)
             if (tagLen == 0)
                 isIrregular = true;
             else {
-                if (auto space = strchr(patentTag, ' '); space)
-                    tagLen = space - patentTag;
-                uniqueTags.insert(std::string(patentTag, patentTag + tagLen));
+//                if (auto space = strchr(patentTag, ' '); space)
+//                    tagLen = space - patentTag;
+                std::string processedTag =
+                        ReplaceDelimiter<'-'>(std::string(patentTag, patentTag + tagLen));
+                uniqueTags.insert(processedTag);
             }
         }
         else {
@@ -36,6 +44,7 @@ bool PatentTagAbstractWalker::for_each(pugi::xml_node &node)
         }))
         {
             abstract = node.child("p").text().get();
+            splitAbstract = split(abstract, '\n');
         }
         else
             isIrregular = true;
@@ -48,5 +57,6 @@ void PatentTagAbstractWalker::reset()
 {
     uniqueTags.clear();
     abstract.clear();
+    splitAbstract.clear();
     isIrregular = false;
 }

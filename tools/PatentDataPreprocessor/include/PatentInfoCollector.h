@@ -18,7 +18,10 @@
 #include "PatentTagAbstractWalker.h"
 
 
-class PatentInfoCollector :public ThreadJob<ConcurrentQueue<std::string>&, ConcurrentQueue<std::string>&> {
+class PatentInfoCollector : public ThreadJob<
+        ConcurrentQueue<std::string>&,
+        ConcurrentQueue<std::string>&,
+        ConcurrentQueue<std::string>&> {
 
     PatentTagAbstractWalker walker_;
 
@@ -29,7 +32,8 @@ class PatentInfoCollector :public ThreadJob<ConcurrentQueue<std::string>&, Concu
     std::vector<std::string> batchInfo_;
 
     void internalRun(ConcurrentQueue<std::string>& filenameQueue,
-            ConcurrentQueue<std::string>& outputInfoQueue) override;
+            ConcurrentQueue<std::string>& outputInfoQueue,
+            ConcurrentQueue<std::string>& ) override;
 
 public:
     explicit PatentInfoCollector(ConcurrentQueue<std::string>& filenameQueue,

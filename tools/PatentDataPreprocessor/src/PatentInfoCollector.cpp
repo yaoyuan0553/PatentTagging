@@ -5,7 +5,9 @@
 
 #include "PatentInfoCollector.h"
 
+#include <filesystem>
 
+namespace fs = std::filesystem;
 
 void PatentInfoCollector::internalRun(ConcurrentQueue<std::string>& filenameQueue,
                  ConcurrentQueue<std::string>& outputInfoQueue)
@@ -30,9 +32,11 @@ void PatentInfoCollector::internalRun(ConcurrentQueue<std::string>& filenameQueu
         if (++bN == batchSize_) {
             outputInfoQueue.push(batchInfo_);
             batchInfo_.clear();
+            bN = 0;
         }
 
-        std::string info;
+        std::string info = fs::path(filename).stem();
+        info += '\t';
         for (const std::string &tag : walker_.uniqueTags)
             info += tag + ',';
         info[info.size() - 1] = '\t';

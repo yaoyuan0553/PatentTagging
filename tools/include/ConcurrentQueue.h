@@ -14,6 +14,7 @@
 #include <thread>
 #include <chrono>
 #include <cstddef>
+#include <atomic>
 
 /* implements a thread-safe queue supporting
  * single item push and pops as well as batch push
@@ -26,7 +27,7 @@ class ConcurrentQueue {
 
     std::queue<T> queue_;
     std::mutex mutex_;
-    bool quitSignal_ = false;
+    std::atomic_bool quitSignal_ = false;
 
 public:
     explicit ConcurrentQueue(const Container& cont = Container()) : queue_(cont) { }
@@ -49,7 +50,7 @@ public:
 
     void setQuitSignal()
     {
-        quitSignal_ = true;
+        quitSignal_.store(true);
     }
 
     /* push a single item to the queue */
@@ -80,7 +81,7 @@ public:
         mutex_.lock();
         while (queue_.empty()) {
             mutex_.unlock();
-            if (quitSignal_)
+            if (quitSignal_.load())
                 return pair<T, bool>{T(), true};
 
             this_thread::sleep_for(chrono::milliseconds(2));
@@ -120,7 +121,7 @@ public:
 
     bool isQuit() const
     {
-        return quitSignal_;
+        return quitSignal_.load();
     }
 };
 
