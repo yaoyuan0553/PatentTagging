@@ -57,8 +57,7 @@ int main(int argc, char* argv[])
     consumers.runAll();
     writeStats.run();
 
-    for (int i = 0; i < nThreads; i++)
-        producers.waitAll();
+    producers.waitAll();
     outputInfoQueue.setQuitSignal();
     splitAbstractQueue.setQuitSignal();
 //    readStats.wait();
