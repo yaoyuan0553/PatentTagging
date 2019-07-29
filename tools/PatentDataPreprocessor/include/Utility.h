@@ -63,8 +63,9 @@ class ParagraphSplit {
     }
 
 public:
-    ParagraphSplit(std::initializer_list<char32_t>&& separators) : separators_(separators) { }
+    ParagraphSplit(const std::initializer_list<char32_t>& separators) : separators_(separators) { }
 
+    /* will throw std::range_error if any character is not utf-32 convertible */
     std::string operator()(const std::string& str, char32_t delimiter)
     {
         std::u32string u32paragraph = converter_.from_bytes(str);
@@ -80,6 +81,7 @@ public:
         return sents;
     }
 
+    /* will throw std::range_error if any character is not utf-32 convertible */
     std::string split(const std::string& str, char32_t delimiter)
     {
         return operator()(str, delimiter);

@@ -19,14 +19,10 @@ struct ThreadPoolInterface {
     virtual void waitAll() = 0;
 };
 
-struct ThreadPoolUnit : ThreadPoolInterface {
-    virtual void add(ThreadInterface*) = 0;
-};
-
 struct ThreadPoolCollection : public ThreadPoolInterface { };
 
 
-class ThreadPool : public ThreadPoolUnit, private std::vector<ThreadInterface*> {
+class ThreadPool : public ThreadPoolInterface, private std::vector<ThreadInterface*> {
 public:
 /*
     */
@@ -43,15 +39,29 @@ public:
 */
     ThreadPool() = default;
 
-    ~ThreadPool() = default;
+    virtual ~ThreadPool()
+    {
+        for (ThreadInterface* t : *this)
+            delete t;
+    }
 
     ThreadPool(const ThreadPool&) = default;
 
     ThreadPool(ThreadPool&& threadPool) = default;
 
-    void add(ThreadInterface* t) override
+/*
+    void add(ThreadInterface* t)
     {
         push_back(t);
+    }
+*/
+
+    template <class ThreadInterfaceSubclass, typename... Args>
+    void add(Args&&... args)
+    {
+        static_assert(std::is_base_of_v<ThreadInterface, ThreadInterfaceSubclass>,
+                "First argument of the template must be a subclass of ThreadInterface");
+        push_back(new ThreadInterfaceSubclass(std::forward<Args>(args)...));
     }
 
     void runAll() override
@@ -71,75 +81,57 @@ template <typename DataPool = void>
 class PCThreadPool : public ThreadPoolCollection {
 protected:
     DataPool& dataPool_;
-    ThreadPool producers_;
-    ThreadPool consumers_;
 public:
+    ThreadPool producers;
+    ThreadPool consumers;
+
     explicit PCThreadPool(DataPool& dataPool) : dataPool_(dataPool) { }
 
     PCThreadPool(ThreadPool&& producers, ThreadPool&& consumers, DataPool& dataPool) :
-        producers_(std::move(producers)), consumers_(std::move(consumers)),
+        producers(std::move(producers)), consumers(std::move(consumers)),
         dataPool_(dataPool) { }
 
     PCThreadPool(PCThreadPool&&) noexcept = default;
 
-    void addProducer(ThreadInterface* t)
-    {
-        producers_.add(t);
-    }
-
-    void addConsumer(ThreadInterface* t)
-    {
-        consumers_.add(t);
-    }
-
     void runAll() override
     {
-        producers_.runAll();
-        consumers_.runAll();
+        producers.runAll();
+        consumers.runAll();
     }
 
     void waitAll() override
     {
-        producers_.waitAll();
-        consumers_.waitAll();
+        producers.waitAll();
+        consumers.waitAll();
     }
 };
 
 template <>
 class PCThreadPool<> : public ThreadPoolCollection {
-protected:
-    ThreadPool producers_;
-    ThreadPool consumers_;
 public:
+    ThreadPool producers;
+    ThreadPool consumers;
+
     PCThreadPool() = default;
 
     PCThreadPool(ThreadPool&& producers, ThreadPool&& consumers) :
-            producers_(std::move(producers)), consumers_(std::move(consumers)) { }
+            producers(std::move(producers)), consumers(std::move(consumers)) { }
 
     PCThreadPool(PCThreadPool&&) noexcept = default;
 
-    void addProducer(ThreadInterface* t)
-    {
-        producers_.add(t);
-    }
-
-    void addConsumer(ThreadInterface* t)
-    {
-        consumers_.add(t);
-    }
-
     void runAll() override
     {
-        producers_.runAll();
-        consumers_.runAll();
+        producers.runAll();
+        consumers.runAll();
     }
 
     void waitAll() override
     {
-        producers_.waitAll();
-        consumers_.waitAll();
+        producers.waitAll();
+        consumers.waitAll();
     }
 };
+
 
 
 

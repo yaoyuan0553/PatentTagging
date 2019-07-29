@@ -101,7 +101,7 @@ void test2()
 //    ts.push_back(new SubB(i));
     ThreadPool threadPool;
     for (int i = 0; i < n; i++)
-        threadPool.add(new SubB(x++));
+        threadPool.add<SubB>(x++);
 
     threadPool.runAll();
     threadPool.waitAll();
@@ -109,9 +109,9 @@ void test2()
     PCThreadPool<> pcThreadPool;
     int nP = 15, nC = 10;
     for (int i = 0; i < nP; i++)
-        pcThreadPool.addProducer(new SubB(i++));
+        pcThreadPool.producers.add<SubB>(i++);
     for (int i = 0; i < nC; i++)
-        pcThreadPool.addConsumer(new SubE);
+        pcThreadPool.consumers.add<SubE>();
 
     pcThreadPool.runAll();
     pcThreadPool.waitAll();

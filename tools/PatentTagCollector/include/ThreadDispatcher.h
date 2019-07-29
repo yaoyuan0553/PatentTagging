@@ -30,9 +30,9 @@ public:
     // ThreadDispatcher(int numConsumers, FileDistributor, ProducerArgs&&... producerArgs, ConsumerArgs&&... consumerArgs):
     //     numConsumers_(numConsumers), producer_(producerArgs...)
     // {
-    //     consumers_.reserve(numConsumers_);
+    //     consumers.reserve(numConsumers_);
     //     for (int i = 0; i < numConsumers_; i++)
-    //         consumers_.emplace_back(consumerArgs...);
+    //         consumers.emplace_back(consumerArgs...);
     // }
     explicit ThreadDispatcher(const std::string& pathFilename, int numConsumers = 1,
             int batchSize = 128);

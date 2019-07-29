@@ -21,7 +21,7 @@ void PatentInfoCollector::internalRun(ConcurrentQueue<std::string>& filenameQueu
     for (;;) {
         pugi::xml_document doc;
         // consume object from queue
-        auto[filename, quit] = filenameQueue.pop();
+        auto [filename, quit] = filenameQueue.pop();
 
         if (quit) break;
 
@@ -31,7 +31,15 @@ void PatentInfoCollector::internalRun(ConcurrentQueue<std::string>& filenameQueu
             continue;
         }
         walker_.reset();
-        doc.traverse(walker_);
+
+        try {
+            doc.traverse(walker_);
+        }
+        catch (std::range_error& e) {
+            std::cerr << e.what() << '\n';
+            std::cerr << "[" << filename << "]: " << walker_.splitAbstract << '\n';
+            continue;
+        }
 
         if (++bN == batchSize_) {
             outputInfoQueue.push(batchInfo);

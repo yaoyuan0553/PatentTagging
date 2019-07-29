@@ -31,7 +31,7 @@ struct PatentTagAbstractWalker : pugi::xml_tree_walker {
     /* resets patent tag to initial stage */
     void reset();
 
-    PatentTagAbstractWalker() : split(std::move(separators)) { }
+    PatentTagAbstractWalker() : split(separators) { }
 };
 
 
