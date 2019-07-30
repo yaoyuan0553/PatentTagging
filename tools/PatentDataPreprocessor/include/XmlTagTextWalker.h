@@ -7,34 +7,29 @@
 #define TOOLS_XMLTAGTEXTWALKER_H
 
 #include <unordered_map>
+#include <vector>
 
 #include <pugixml.hpp>
 
 #include "Utility.h"
 
 
-using TagCollection = std::unordered_map<std::string, std::string>;
+using TagTextDict = std::unordered_map<std::string, std::vector<std::string>>;
 
 
 class XmlTagTextWalker : public pugi::xml_tree_walker {
-    ParagraphSplit split;
 
-    TagCollection tagCollection;
+    TagTextDict tagTextDict_;
 
 public:
 
+    XmlTagTextWalker(std::initializer_list<std::string>&& tags);
+
     bool for_each(pugi::xml_node& node) override;
 
-    const TagCollection& getTagTexts() const
-    {
-        return tagCollection;
-    }
+    const TagTextDict& getTagTexts() const { return tagTextDict_; }
 
-    void reset()
-    {
-        for (auto& p : tagCollection)
-            p.second.clear();
-    }
+    void reset();
 };
 
 
