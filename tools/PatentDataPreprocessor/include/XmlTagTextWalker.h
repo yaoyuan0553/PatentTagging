@@ -24,6 +24,7 @@ class XmlTagTextWalker : public pugi::xml_tree_walker {
 public:
 
     XmlTagTextWalker(std::initializer_list<std::string>&& tags);
+    explicit XmlTagTextWalker(const std::vector<std::string>& tags);
 
     bool for_each(pugi::xml_node& node) override;
 

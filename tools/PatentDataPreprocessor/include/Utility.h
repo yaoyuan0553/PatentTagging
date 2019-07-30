@@ -10,6 +10,11 @@
 #include <sstream>
 #include <filesystem>
 #include <unordered_set>
+#include <functional>
+
+
+/* type alias - one string per file output */
+using FileOutput = std::vector<std::string>;
 
 
 template <char newDelimiter, char oldDelimiter = ' '>
@@ -85,6 +90,44 @@ public:
     std::string split(const std::string& str, char32_t delimiter)
     {
         return operator()(str, delimiter);
+    }
+};
+
+
+template <typename FuncSignature>
+class FunctionDict {
+protected:
+    std::unordered_map<std::string, std::function<FuncSignature>> funcDict_;
+public:
+    FunctionDict() = default;
+
+    auto& operator[](const std::string& str)
+    {
+        return funcDict_[str];
+    }
+
+    virtual bool add(const std::string& name, std::function<FuncSignature> function)
+    {
+        return funcDict_.insert({name, function});
+    }
+};
+
+
+/* A functor storing customized function to format inner text of a tag */
+class TagTextFormat : public FunctionDict<std::string(const std::string&)> {
+    std::vector<std::string> tags_;
+public:
+    const std::vector<std::string>& getTags()
+    {
+        if (tags_.size() != funcDict_.size())
+        {
+            tags_.reserve(funcDict_.size());
+            tags_.clear();
+            for (const auto& tf : funcDict_)
+                tags_.push_back(tf.first);
+        }
+
+        return tags_;
     }
 };
 

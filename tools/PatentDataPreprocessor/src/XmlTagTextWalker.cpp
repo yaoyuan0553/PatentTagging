@@ -14,6 +14,12 @@ XmlTagTextWalker::XmlTagTextWalker(std::initializer_list<std::string>&& tags)
         tagTextDict_[tag] = std::vector<std::string>();
 }
 
+XmlTagTextWalker::XmlTagTextWalker(const std::vector<std::string>& tags)
+{
+    for (const std::string& tag : tags)
+        tagTextDict_[tag] = std::vector<std::string>();
+}
+
 bool XmlTagTextWalker::for_each(pugi::xml_node &node)
 {
     if (auto tagNode = tagTextDict_.find(std::string(node.name()));
