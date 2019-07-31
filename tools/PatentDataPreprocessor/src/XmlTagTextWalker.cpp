@@ -8,13 +8,7 @@
 #include <string.h>
 
 
-XmlTagTextWalker::XmlTagTextWalker(std::initializer_list<std::string>&& tags)
-{
-    for (const std::string& tag : tags)
-        tagTextDict_[tag] = std::vector<std::string>();
-}
-
-XmlTagTextWalker::XmlTagTextWalker(const std::vector<std::string>& tags)
+XmlTagTextWalker::XmlTagTextWalker(const std::unordered_set<std::string>& tags)
 {
     for (const std::string& tag : tags)
         tagTextDict_[tag] = std::vector<std::string>();

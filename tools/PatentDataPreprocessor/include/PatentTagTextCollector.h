@@ -13,6 +13,7 @@
 #include "ThreadJob.h"
 #include "Utility.h"
 #include "XmlTagTextWalker.h"
+#include "TagTextFormatter.h"
 
 
 class PatentTagTextCollector : public ThreadJob<> {
@@ -22,7 +23,9 @@ class PatentTagTextCollector : public ThreadJob<> {
     ConcurrentQueue<FileOutput>& outputQueue_;
 
     static const std::initializer_list<char32_t> defaultSeparators_;
-    ParagraphSplit paragraphSplit_;
+    SplitParagraph paragraphSplit_;
+
+    FileOutputFormatter& fileOutputFormatter_;
 
     void internalRun() final;
 
@@ -31,11 +34,11 @@ class PatentTagTextCollector : public ThreadJob<> {
 public:
     PatentTagTextCollector(ConcurrentQueue<std::string>& filenameQueue,
             ConcurrentQueue<FileOutput>& outputQueue,
-            std::initializer_list<std::string> tags,
+            FileOutputFormatter& fileOutputFormatter,
             std::initializer_list<char32_t> separators = defaultSeparators_) :
-            walker_(std::move(tags)),
+            walker_(fileOutputFormatter.getTags()),
             filenameQueue_(filenameQueue), outputQueue_(outputQueue),
-            paragraphSplit_(separators) { }
+            paragraphSplit_(separators), fileOutputFormatter_(fileOutputFormatter) { }
 };
 
 

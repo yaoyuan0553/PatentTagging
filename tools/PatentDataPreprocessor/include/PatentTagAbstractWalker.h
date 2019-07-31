@@ -18,7 +18,7 @@ struct PatentTagAbstractWalker : pugi::xml_tree_walker {
 
     static std::initializer_list<char32_t> separators;
 
-    ParagraphSplit split;
+    SplitParagraph split;
 
     std::unordered_set<std::string> uniqueTags;
     std::string abstract;

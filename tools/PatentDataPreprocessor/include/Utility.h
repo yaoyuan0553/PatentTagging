@@ -10,7 +10,9 @@
 #include <sstream>
 #include <filesystem>
 #include <unordered_set>
+#include <unordered_map>
 #include <functional>
+#include <algorithm>
 
 
 /* type alias - one string per file output */
@@ -18,7 +20,7 @@ using FileOutput = std::vector<std::string>;
 
 
 template <char newDelimiter, char oldDelimiter = ' '>
-std::string ReplaceDelimiter(std::string&& str)
+std::string ReplaceDelimiter(const std::string& str)
 {
     using namespace std;
 
@@ -37,7 +39,7 @@ std::string ReplaceDelimiter(std::string&& str)
 
 
 template <char = 0, char = 0>
-std::string ReplaceDelimiter(std::string&& str, char newDelimiter, char oldDelimiter)
+std::string ReplaceDelimiter(const std::string& str, char newDelimiter, char oldDelimiter)
 {
     using namespace std;
 
@@ -53,7 +55,7 @@ std::string ReplaceDelimiter(std::string&& str, char newDelimiter, char oldDelim
 }
 
 
-class ParagraphSplit {
+class SplitParagraph {
     std::unordered_set<char32_t> separators_;
     std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter_;
 
@@ -68,7 +70,15 @@ class ParagraphSplit {
     }
 
 public:
-    ParagraphSplit(const std::initializer_list<char32_t>& separators) : separators_(separators) { }
+    SplitParagraph(const std::initializer_list<char32_t>& separators) : separators_(separators) { }
+
+    SplitParagraph(const SplitParagraph& other) : separators_(other.separators_) { }
+
+    SplitParagraph& operator=(const SplitParagraph& other)
+    {
+        separators_ = other.separators_;
+        return *this;
+    }
 
     /* will throw std::range_error if any character is not utf-32 convertible */
     std::string operator()(const std::string& str, char32_t delimiter)
@@ -94,42 +104,7 @@ public:
 };
 
 
-template <typename FuncSignature>
-class FunctionDict {
-protected:
-    std::unordered_map<std::string, std::function<FuncSignature>> funcDict_;
-public:
-    FunctionDict() = default;
 
-    auto& operator[](const std::string& str)
-    {
-        return funcDict_[str];
-    }
-
-    virtual bool add(const std::string& name, std::function<FuncSignature> function)
-    {
-        return funcDict_.insert({name, function});
-    }
-};
-
-
-/* A functor storing customized function to format inner text of a tag */
-class TagTextFormat : public FunctionDict<std::string(const std::string&)> {
-    std::vector<std::string> tags_;
-public:
-    const std::vector<std::string>& getTags()
-    {
-        if (tags_.size() != funcDict_.size())
-        {
-            tags_.reserve(funcDict_.size());
-            tags_.clear();
-            for (const auto& tf : funcDict_)
-                tags_.push_back(tf.first);
-        }
-
-        return tags_;
-    }
-};
 
 
 #endif //TOOLS_UTILITY_H

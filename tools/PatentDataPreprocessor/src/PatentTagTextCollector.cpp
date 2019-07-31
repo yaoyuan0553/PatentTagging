@@ -35,9 +35,9 @@ void PatentTagTextCollector::internalRun()
         try {
             doc.traverse(walker_);
         }
-        catch (std::range_error& e) {
-            std::cerr << e.what() << '\n';
-            std::cerr << "[" << filename << "]\n";
+        catch (range_error& e) {
+            cerr << e.what() << '\n';
+            cerr << "[" << filename << "]\n";
             continue;
         }
     }
@@ -46,7 +46,11 @@ void PatentTagTextCollector::internalRun()
 
 void PatentTagTextCollector::processTagTexts(const TagTextDict& tagTextDict)
 {
+    for (const auto& [tag, textVec] : tagTextDict)
+    {
+        for (const auto& [filename, _] : fileOutputFormatter_);
 
+    }
 }
 
 

@@ -7,6 +7,7 @@
 #define TOOLS_XMLTAGTEXTWALKER_H
 
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <pugixml.hpp>
@@ -23,8 +24,7 @@ class XmlTagTextWalker : public pugi::xml_tree_walker {
 
 public:
 
-    XmlTagTextWalker(std::initializer_list<std::string>&& tags);
-    explicit XmlTagTextWalker(const std::vector<std::string>& tags);
+    explicit XmlTagTextWalker(const std::unordered_set<std::string>& tags);
 
     bool for_each(pugi::xml_node& node) override;
 
