@@ -11,6 +11,7 @@
 #include <unordered_map>
 
 #include <ConcurrentQueue.h>
+#include <bits/unordered_map.h>
 #include "ThreadJob.h"
 #include "Utility.h"
 #include "XmlTagTextWalker.h"
@@ -32,7 +33,7 @@ class PatentTagTextCollector : public ThreadJob<> {
 
     void internalRun() final;
 
-    void generateOutputText(BatchOutputByFile& batchOutputByFile);
+    void addBatchToQueue(BatchOutputByFile& batchOutputByFile);
 
 public:
     PatentTagTextCollector(CQueue<std::string>& filenameQueue,

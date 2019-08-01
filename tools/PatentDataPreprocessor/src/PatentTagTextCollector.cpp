@@ -8,6 +8,7 @@
 #include <stdio.h>
 
 #include <pugixml.hpp>
+#include <bits/unordered_map.h>
 
 #include "TagConstants.h"
 
@@ -19,7 +20,7 @@ using namespace std;
 void PatentTagTextCollector::internalRun()
 {
     unordered_map<string, vector<string>> batchOutputByFile;
-    for (int bN = 1;; bN++)
+    for (int bN = 0;;)
     {
         pugi::xml_document doc;
         auto [filename, quit] = filenameQueue_.pop();
@@ -32,8 +33,21 @@ void PatentTagTextCollector::internalRun()
 
         walker_.reset();
 
+        doc.traverse(walker_);
+
+        // add name of current xml file to the collection
+        walker_.getTagTexts()[tags::filename].push_back(fs::path(filename).stem());
+
+        unordered_map<string, string> singleOutputByFile;
+        /* range_error can be thrown by functors who use SplitParagraph functor
+         * when invalid char32_t is encountered */
         try {
-            doc.traverse(walker_);
+            for (const string& outputFilename : fileOutputFormatterDict_.getKeys()) {
+                if (bN == 0)
+                    batchOutputByFile[outputFilename].reserve(batchSize_);
+                singleOutputByFile[outputFilename] =
+                        fileOutputFormatterDict_[outputFilename](walker_.getTagTexts());
+            }
         }
         catch (range_error& e) {
             cerr << e.what() << '\n';
@@ -41,23 +55,16 @@ void PatentTagTextCollector::internalRun()
             continue;
         }
 
-        // add name of current xml file to the collection
-        walker_.getTagTexts()[tags::filename].push_back(fs::path(filename).stem());
+        for (auto&& [filename, output] : singleOutputByFile)
+            batchOutputByFile[filename].emplace_back(output);
 
-        for (const string& outputFilename : fileOutputFormatterDict_.getKeys()) {
-            if (bN == 0)
-                batchOutputByFile[outputFilename].reserve(batchSize_);
-            batchOutputByFile[outputFilename].push_back(
-                    fileOutputFormatterDict_[outputFilename](walker_.getTagTexts()));
-        }
-
-        if (bN % batchSize_ == 0)
-            generateOutputText(batchOutputByFile);
+        if (++bN % batchSize_ == 0)
+            addBatchToQueue(batchOutputByFile);
     }
-    generateOutputText(batchOutputByFile);
+    addBatchToQueue(batchOutputByFile);
 }
 
-void PatentTagTextCollector::generateOutputText(BatchOutputByFile& batchOutputByFile)
+void PatentTagTextCollector::addBatchToQueue(BatchOutputByFile& batchOutputByFile)
 {
     for (auto&& [outputFilename, output] : batchOutputByFile) {
         if (outputQueueByFile_.find(outputFilename) == outputQueueByFile_.end()) {

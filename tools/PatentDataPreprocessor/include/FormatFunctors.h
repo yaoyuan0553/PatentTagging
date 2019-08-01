@@ -48,6 +48,8 @@ using TagTextFormatterDict = FunctorDict<TagTextFormatterFunctor, std::string, c
 struct FileOutputFormatter : public Cloneable {
     virtual std::string operator()(const TagTextDict& tagTextDict) = 0;
     DECLARE_ABSTRACT_CLONE(FileOutputFormatter);
+
+    virtual ~FileOutputFormatter() = default;
 };
 
 

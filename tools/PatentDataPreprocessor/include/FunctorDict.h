@@ -15,7 +15,7 @@
 
 template <typename Functor, typename Ret, typename... Args>
 class FunctorDict {
-    static_assert(std::is_class_v<Functor>, "Functor must be a class type, not function");
+    static_assert(std::is_class_v<Functor>, "Functor must be a class, not a function");
     static_assert(std::is_base_of_v<Cloneable, Functor>, "Functor must be Cloneable");
     static_assert(std::is_invocable_r_v<Ret, Functor, Args...>,
     "Functor must be of callable of type string(*)(const string&)");

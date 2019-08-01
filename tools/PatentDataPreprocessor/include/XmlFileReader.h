@@ -25,6 +25,6 @@ class XmlFileReader : public ThreadJob<> {
 public:
     XmlFileReader(std::string pathFilename, ConcurrentQueue<std::string>& filenameQueue,
             int batchSize = 128):
-            pathFilename_(std::move(pathFilename)), batchSize_(batchSize),
+            batchSize_(batchSize), pathFilename_(std::move(pathFilename)),
             filenameQueue_(filenameQueue) { }
 };

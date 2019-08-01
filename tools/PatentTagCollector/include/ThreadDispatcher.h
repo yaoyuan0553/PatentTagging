@@ -21,7 +21,7 @@ class ThreadDispatcher {
     FileDistributor producer_;
     std::vector<PatentTagCollector> consumers_;
 
-    StatsThread stats_;
+    StatsThread<std::string> stats_;
 
 
 public:

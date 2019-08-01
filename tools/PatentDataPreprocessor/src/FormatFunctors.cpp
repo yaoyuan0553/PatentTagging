@@ -31,14 +31,7 @@ std::string SplitAbstractFileOutput::operator()(const TagTextDict& tagTextDict)
 {
     std::string output;
     for (const std::string& c : tagTextDict.at(tags::abstract)) {
-        try {
-            output += splitParagraph_(ReplaceDelimiter<' '>(ReplaceDelimiter<' ', '\n'>(c)), '\n');
-        }
-        catch (std::range_error& e) {
-            std::cerr << e.what() << '\n';
-            std::cerr << '[' << tagTextDict.at(tags::filename)[0] << "]\n";
-            continue;
-        }
+        output += splitParagraph_(ReplaceDelimiter<' '>(ReplaceDelimiter<' ', '\n'>(c)), '\n');
     }
     if (!output.empty())
         output += "\n\n";

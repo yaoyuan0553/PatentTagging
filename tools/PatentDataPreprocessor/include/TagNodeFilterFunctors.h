@@ -24,6 +24,8 @@ public:
 struct TagNodeFilter : public Cloneable {
     virtual std::string operator()(pugi::xml_node& node) = 0;
     DECLARE_ABSTRACT_CLONE(TagNodeFilter);
+
+    virtual ~TagNodeFilter() = default;
 };
 
 
