@@ -15,6 +15,9 @@
 #include <algorithm>
 
 
+/* replace multiple occurrences of the oldDelimiter (2nd template argument)
+ * with a single newDelimiter (1st template argument)
+ * the default oldDelimiter is a space character ' ' */
 template <char newDelimiter, char oldDelimiter = ' '>
 std::string ReplaceDelimiter(const std::string& str)
 {
@@ -52,7 +55,9 @@ std::string ReplaceDelimiter(const std::string& str, char newDelimiter, char old
 
 
 /* A functor class to split a paragraph into sentences delimited with a given delimiter
- * may throw range_error when encounters unrecognized characters */
+ * may throw range_error when encounters unrecognized characters
+ * made as a function emulating class (aka. functor) to save initialization time of
+ * helper variables, i.e. separators_ and converter_ */
 class SplitParagraph {
     std::unordered_set<char32_t> separators_;
     std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter_;
@@ -107,19 +112,47 @@ public:
 };
 
 
+class TruncateUnicodeString {
+    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter_;
+public:
+    TruncateUnicodeString() = default;
+
+    TruncateUnicodeString(const TruncateUnicodeString&) { }
+
+    std::string operator()(const std::string& str, int length)
+    {
+        std::u32string u32str = converter_.from_bytes(str);
+
+        return converter_.to_bytes(u32str.substr(0, length));
+    }
+
+    std::string truncate(const std::string& str, int length)
+    {
+        return operator()(str, length);
+    }
+};
+
+
+/* Cloneable Macros to shorten repetitive code */
+
+/* Define a default clone member override function */
 #define DEFINE_DEFAULT_CLONE(cls) \
     cls* clone() const override { return new cls(*this); }
 
+/* Declare a pure virtual clone member function */
 #define DECLARE_ABSTRACT_CLONE(cls) \
     cls* clone() const override = 0
 
 
+/* Interface - subclasses of this class must implement clone() function */
 struct Cloneable {
     virtual Cloneable* clone() const = 0;
 };
 
 
 /* name alias for classes */
+
+/* For storing Tag as key and vector of Texts as value */
 using TagTextDict = std::unordered_map<std::string, std::vector<std::string>>;
 
 

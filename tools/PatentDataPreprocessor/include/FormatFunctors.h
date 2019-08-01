@@ -54,6 +54,8 @@ struct FileOutputFormatter : public Cloneable {
 
 
 struct IdClassAbstractFileOutput : public FileOutputFormatter {
+    TruncateUnicodeString truncateUnicodeString_;
+public:
     std::string operator()(const TagTextDict& tagTextDict) override;
 
     DEFINE_DEFAULT_CLONE(IdClassAbstractFileOutput);

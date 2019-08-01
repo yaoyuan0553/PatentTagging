@@ -20,7 +20,7 @@ std::string IdClassAbstractFileOutput::operator()(const TagTextDict& tagTextDict
     output.back() = '\t';
 
     for (const std::string& a : tagTextDict.at(tags::abstract))
-        output += ReplaceDelimiter<' '>(ReplaceDelimiter<' ', '\n'>(a));
+        output += truncateUnicodeString_(ReplaceDelimiter<' '>(ReplaceDelimiter<' ', '\n'>(a)), 510);
 
     output += '\n';
 
