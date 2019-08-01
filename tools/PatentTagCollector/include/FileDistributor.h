@@ -19,14 +19,16 @@ class FileDistributor : public ThreadJob<> {
     int batchSize_;
     std::string pathFilename_;
 
-    ConcurrentQueue<std::string> filenameQueue_;
+    ConcurrentQueue<std::string>& filenameQueue_;
 
     void internalRun() override;
 
 public:
 
-    explicit FileDistributor(std::string pathFilename, int batchSize = 128):
-        pathFilename_(std::move(pathFilename)), batchSize_(batchSize) { }
+    FileDistributor(std::string pathFilename, ConcurrentQueue<std::string>& filenameQueue,
+            int batchSize = 128):
+        pathFilename_(std::move(pathFilename)), batchSize_(batchSize),
+        filenameQueue_(filenameQueue) { }
 
     ConcurrentQueue<std::string>& filenameQueue() { return filenameQueue_; }
 };

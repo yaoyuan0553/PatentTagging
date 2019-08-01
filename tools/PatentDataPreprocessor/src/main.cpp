@@ -3,143 +3,149 @@
 //
 #include <iostream>
 #include <string>
-#include <utility>
-#include <thread>
+#include <stdio.h>
 
 #include "ThreadJob.h"
 #include "ThreadPool.h"
 
+#include "StatsThread.h"
+#include "XmlFileReader.h"
+#include "PatentInfoCollector.h"
+#include "PatentInfoWriter.h"
+#include "PatentInfoPC.h"
+
+#include "FormatFunctors.h"
+#include "TagConstants.h"
+#include "PatentTagTextCollector.h"
+#include "TagNodeFilterFunctors.h"
+
 using namespace std;
 
 
-class SubA : public ThreadJob<string, int> {
-    void internalRun(string str, int i) override
-    {
-        cout << "SubA: " << str << " " << i << endl;
-    }
-};
-
-class SubB : public ThreadJob<double> {
-    void internalRun(double x) override
-    {
-        cout << "SubB: " << x << endl;
-    }
-};
-
-class SubC : public ThreadJob<string&> {
-    void internalRun(string& str) override
-    {
-        cout << "SubC: " << str << endl;
-    }
-};
-
-
-template <typename... T>
-void wrapper(ThreadJob<T...>& base, T&&... args)
+void printUsageAndExit(const char* program)
 {
-    base.run(forward<T>(args)...);
+    printf("Usage:\n\t\t%s <path-file> <tag-abstract-output-file> "
+           "<split-abstract-output-file> <num-threads>\n", program);
+    exit(-1);
 }
 
-void test()
+void testRun(int argc, char* argv[])
 {
-    SubA a;
-    SubB b;
-    SubC c;
-    a.run("blah", 3);
-    b.run(3.14);
-    string haha = "haha";
-    c.run(haha);
 
-    a.wait();
-    b.wait();
-    c.wait();
+    if (argc != 5)
+        printUsageAndExit(argv[0]);
 
+    string pathFilename(argv[1]);
+    string infoOutputFilename(argv[2]);
+    string splitAbstractOutputFilename(argv[3]);
+    int nThreads = atoi(argv[4]);
+
+    ConcurrentQueue<string> filenameQueue;
+    XmlFileReader xmlFileReader(pathFilename, filenameQueue);
+
+    xmlFileReader.runOnMain();
+
+    ConcurrentQueue<string> outputInfoQueue;
+    ConcurrentQueue<string> splitAbstractQueue;
+
+    ThreadPool producers;
+
+    for (int i = 0; i < nThreads; i++)
+        producers.add<PatentInfoCollector>(filenameQueue, outputInfoQueue, splitAbstractQueue);
+
+    ThreadPool consumers;
+
+    consumers.add<PatentInfoWriter>(infoOutputFilename, outputInfoQueue);
+    consumers.add<PatentInfoWriter>(splitAbstractOutputFilename, splitAbstractQueue);
+
+//    StatsThread<string> readStats(filenameQueue_);
+    StatsThread<string, true> writeStats(outputInfoQueue, filenameQueue.totalPushedItems());
+
+    producers.runAll();
+//    readStats.run();
+    consumers.runAll();
+    writeStats.run();
+
+    producers.waitAll();
+    outputInfoQueue.setQuitSignal();
+    splitAbstractQueue.setQuitSignal();
+//    readStats.wait();
+    consumers.waitAll();
+    writeStats.wait();
+
+    cout << "finished\n";
 }
 
-// in the normal case, just the identity
-template<class T>
-struct item_return {
-    using type = T;
-};
 
-template <class T>
-struct item_return<T&> {
-    using type = reference_wrapper<T>;
-};
-
-template<class T>
-typename item_return<T>::type foo() { return T(); }
-
-template<>
-struct item_return<float> { using type = int; };
-
-template<>
-int foo<float>() { return 42; }
-
-template<class T, typename = void_t<>>
-typename item_return<T>::type bar(T val) { return val; }
-
-template<class T, typename = void_t<>>
-typename item_return<T&>::type bar(T& val) { return ref(val); }
-
-
-
-template<typename T>
-struct reference_detector {
-    static constexpr T value = T();
-    reference_detector()
-    {
-        cout << "not-reference\n";
-    }
-};
-
-template<typename T>
-struct reference_detector<T&> {
-    static const reference_wrapper<T> value = ref(T());
-    reference_detector()
-    {
-        cout << "l-value reference\n";
-    }
-};
-
-template<typename T>
-struct reference_detector<T&&> {
-    static constexpr T&& value = T();
-    reference_detector()
-    {
-        cout << "r-value reference\n";
-    }
-};
-
-
-class Foo {};
-
-
-
-
-int main()
+void test(int argc, char* argv[])
 {
-//    int x = 5;
-//
-//    cout << boolalpha;
-//    cout << optional_ref_wrapper<int>::value << '\n';
-//    cout << optional_ref_wrapper<int&>::value << '\n';
-//
-//    auto o1 = optional_ref_wrapper<int>()(x);
-//    cout << o1 << endl;
-//    cout << x << endl;
-//
-//    auto o2 = optional_ref_wrapper<int&>()(x);
-//    cout << o2 << endl;
-//    cout << x << endl;
-//
-//    auto o3 = optional_ref_wrapper<decltype(x)>()(x);
-//    cout << o3 << endl;
-    cout << boolalpha;
-    cout << is_base_of_v<ThreadJob<>, SubA> << endl;
-    cout << is_base_of_template_v<ThreadJob, SubC> << endl;
+    if (argc != 5)
+        printUsageAndExit(argv[0]);
 
-//    test();
+    int nThreads = atoi(argv[4]);
+
+    TagNodeFilterDict tagNodeFilterDict;
+
+    tagNodeFilterDict.add<ClassificationNodeFilter>(tags::classification);
+    tagNodeFilterDict.add<AbstractGreedyNodeFilter>(tags::abstract);
+
+    FileOutputFormatterDict fileOutputFormatterDict;
+
+    fileOutputFormatterDict.add<IdClassAbstractFileOutput>(argv[2]);
+    fileOutputFormatterDict.add<SplitAbstractFileOutput>(argv[3]);
+
+    CQueue<string> filenameQueue;
+    unordered_map<string, CQueue<string>> outputQueueByFile;
+
+    /* collect file paths */
+    XmlFileReader xmlFileReader(argv[1], filenameQueue);
+    xmlFileReader.runOnMain();
+
+    /* construct outputQueues in-place */
+    outputQueueByFile.emplace(piecewise_construct, make_tuple(argv[2]), make_tuple());
+    outputQueueByFile.emplace(piecewise_construct, make_tuple(argv[3]), make_tuple());
+
+    ThreadPool producers, consumers;
+    for (int i = 0; i < nThreads; i++)
+        producers.add<PatentTagTextCollector>(filenameQueue, outputQueueByFile,
+                fileOutputFormatterDict, tagNodeFilterDict);
+
+    for (auto& [filename, outputQueue] : outputQueueByFile)
+        consumers.add<PatentInfoWriter>(filename, outputQueue);
+
+    StatsThread<string, true> writeStats(outputQueueByFile[argv[2]], filenameQueue.totalPushedItems());
+
+    producers.runAll();
+    consumers.runAll();
+    writeStats.run();
+
+    producers.waitAll();
+    for (auto& [filename, outputQueue] : outputQueueByFile)
+        outputQueue.setQuitSignal();
+
+    consumers.waitAll();
+    writeStats.wait();
+
+    cout << "finished\n";
+}
+
+
+int main(int argc, char* argv[])
+{
+
+/*
+    if (argc != 5)
+        printUsageAndExit(argv[0]);
+
+    int nThreads = atoi(argv[4]);
+
+    PatentInfoPC pcPool(argv[1], argv[2], argv[3], nThreads);
+
+    pcPool.runAll();
+
+    pcPool.waitAll();
+*/
+    test(argc, argv);
 
     return 0;
 }

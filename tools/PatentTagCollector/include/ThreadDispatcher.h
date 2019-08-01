@@ -17,10 +17,11 @@
 class ThreadDispatcher {
     int numConsumers_;
 
+    ConcurrentQueue<std::string> filenameQueue_;
     FileDistributor producer_;
     std::vector<PatentTagCollector> consumers_;
 
-    StatsThread stats_;
+    StatsThread<std::string> stats_;
 
 
 public:
@@ -29,11 +30,11 @@ public:
     // ThreadDispatcher(int numConsumers, FileDistributor, ProducerArgs&&... producerArgs, ConsumerArgs&&... consumerArgs):
     //     numConsumers_(numConsumers), producer_(producerArgs...)
     // {
-    //     consumers_.reserve(numConsumers_);
+    //     consumers.reserve(numConsumers_);
     //     for (int i = 0; i < numConsumers_; i++)
-    //         consumers_.emplace_back(consumerArgs...);
+    //         consumers.emplace_back(consumerArgs...);
     // }
-    ThreadDispatcher(const std::string& pathFilename, int numConsumers = 1,
+    explicit ThreadDispatcher(const std::string& pathFilename, int numConsumers = 1,
             int batchSize = 128);
 
     void join();

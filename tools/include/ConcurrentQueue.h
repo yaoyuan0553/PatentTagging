@@ -14,6 +14,7 @@
 #include <thread>
 #include <chrono>
 #include <cstddef>
+#include <atomic>
 
 /* implements a thread-safe queue supporting
  * single item push and pops as well as batch push
@@ -26,12 +27,12 @@ class ConcurrentQueue {
 
     std::queue<T> queue_;
     std::mutex mutex_;
-    bool quitSignal_ = false;
+    std::atomic_bool quitSignal_ = false;
 
 public:
     explicit ConcurrentQueue(const Container& cont = Container()) : queue_(cont) { }
     explicit ConcurrentQueue(Container&& cont) : queue_(cont) { }
-    ConcurrentQueue(const std::queue<T>&& other) : queue_(other) { }
+    explicit ConcurrentQueue(const std::queue<T>&& other) : queue_(other) { }
     template <class Alloc>
     explicit ConcurrentQueue(const Alloc& alloc) : queue_(alloc) { }
     template <class Alloc>
@@ -49,7 +50,7 @@ public:
 
     void setQuitSignal()
     {
-        quitSignal_ = true;
+        quitSignal_.store(true);
     }
 
     /* push a single item to the queue */
@@ -80,7 +81,7 @@ public:
         mutex_.lock();
         while (queue_.empty()) {
             mutex_.unlock();
-            if (quitSignal_)
+            if (quitSignal_.load())
                 return pair<T, bool>{T(), true};
 
             this_thread::sleep_for(chrono::milliseconds(2));
@@ -120,9 +121,14 @@ public:
 
     bool isQuit() const
     {
-        return quitSignal_;
+        return quitSignal_.load();
     }
 };
+
+
+/* name alias for shortening class name */
+template <typename T, typename Container = std::deque<T>>
+using CQueue = ConcurrentQueue<T, Container>;
 
 
 #endif //TOOLS_CONCURRENTQUEUE_H

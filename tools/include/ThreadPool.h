@@ -11,37 +11,127 @@
 #include <type_traits>
 
 #include "ThreadJob.h"
+#include "ConcurrentQueue.h"
 
 
-template <template <typename...> class Base, typename Derived>
-struct is_base_of_template_impl {
-private:
-    template<typename... Ts>
-    static constexpr std::true_type test(const Base<Ts...> *);
-    static constexpr std::false_type test(...);
-public:
-    using type = decltype(test(std::declval<Derived*>()));
+struct ThreadPoolInterface {
+    virtual void runAll() = 0;
+    virtual void waitAll() = 0;
 };
 
-template <template <typename...> class Base, typename Derived>
-using is_base_of_template = typename is_base_of_template_impl<Base, Derived>::type;
-
-template <template <typename...> class Base, typename Derived>
-constexpr bool is_base_of_template_v = is_base_of_template<Base, Derived>::value;
+struct ThreadPoolCollection : public ThreadPoolInterface { };
 
 
-template <typename... ThreadJobSubClass>
-class ThreadPool {
-    static_assert(std::conjunction_v<is_base_of_template<ThreadJob, ThreadJobSubClass>...>,
-            "Argument(s) of ThreadPool must be subclass(es) of ThreadJob!");
-protected:
+class ThreadPool : public ThreadPoolInterface, private std::vector<ThreadInterface*> {
+public:
+/*
+    */
+/* initialize threads with a callback function *//*
+
+    template <typename ThreadInitFn>
+    ThreadPool(int n, ThreadInitFn&& threadInitFn)
+    {
+        static_assert(std::is_invocable_v<ThreadInitFn, decltype(threadPool_)&>,
+                "ThreadInitFn expects argument type of (vector<ThreadInterface>&)");
+        threadPool_.reserve(n);
+        threadInitFn(threadPool_);
+    }
+*/
     ThreadPool() = default;
 
-public:
-    void waitAll()
+    virtual ~ThreadPool()
     {
+        for (ThreadInterface* t : *this)
+            delete t;
+    }
+
+    ThreadPool(const ThreadPool&) = default;
+
+    ThreadPool(ThreadPool&& threadPool) = default;
+
+/*
+    void add(ThreadInterface* t)
+    {
+        push_back(t);
+    }
+*/
+
+    template <class ThreadInterfaceSubclass, typename... Args>
+    void add(Args&&... args)
+    {
+        static_assert(std::is_base_of_v<ThreadInterface, ThreadInterfaceSubclass>,
+                "First argument of the template must be a subclass of ThreadInterface");
+        push_back(new ThreadInterfaceSubclass(std::forward<Args>(args)...));
+    }
+
+    void runAll() override
+    {
+        for (ThreadInterface* t : *this)
+            t->run();
+    }
+    void waitAll() override
+    {
+        for (ThreadInterface* t : *this)
+            t->wait();
     }
 };
+
+
+template <typename DataPool = void>
+class PCThreadPool : public ThreadPoolCollection {
+protected:
+    DataPool& dataPool_;
+public:
+    ThreadPool producers;
+    ThreadPool consumers;
+
+    explicit PCThreadPool(DataPool& dataPool) : dataPool_(dataPool) { }
+
+    PCThreadPool(ThreadPool&& producers, ThreadPool&& consumers, DataPool& dataPool) :
+        producers(std::move(producers)), consumers(std::move(consumers)),
+        dataPool_(dataPool) { }
+
+    PCThreadPool(PCThreadPool&&) noexcept = default;
+
+    void runAll() override
+    {
+        producers.runAll();
+        consumers.runAll();
+    }
+
+    void waitAll() override
+    {
+        producers.waitAll();
+        consumers.waitAll();
+    }
+};
+
+template <>
+class PCThreadPool<> : public ThreadPoolCollection {
+public:
+    ThreadPool producers;
+    ThreadPool consumers;
+
+    PCThreadPool() = default;
+
+    PCThreadPool(ThreadPool&& producers, ThreadPool&& consumers) :
+            producers(std::move(producers)), consumers(std::move(consumers)) { }
+
+    PCThreadPool(PCThreadPool&&) noexcept = default;
+
+    void runAll() override
+    {
+        producers.runAll();
+        consumers.runAll();
+    }
+
+    void waitAll() override
+    {
+        producers.waitAll();
+        consumers.waitAll();
+    }
+};
+
 
 
 
