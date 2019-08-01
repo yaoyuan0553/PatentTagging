@@ -12,13 +12,9 @@
 #include "FunctorDict.h"
 #include "Utility.h"
 
-#define DEFINE_DEFAULT_CLONE(cls) \
-    cls* clone() const override { return new cls(*this); }
 
-
-struct TagTextFormatterFunctor {
+struct TagTextFormatterFunctor : public Cloneable {
     virtual std::string operator()(const std::string& text) = 0;
-    virtual TagTextFormatterFunctor* clone() const = 0;
 };
 
 
