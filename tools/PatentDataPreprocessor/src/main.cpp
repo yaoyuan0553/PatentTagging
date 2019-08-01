@@ -14,6 +14,11 @@
 #include "PatentInfoWriter.h"
 #include "PatentInfoPC.h"
 
+#include "FormatFunctors.h"
+#include "TagConstants.h"
+#include "PatentTagTextCollector.h"
+#include "TagNodeFilterFunctors.h"
+
 using namespace std;
 
 
@@ -71,15 +76,67 @@ void testRun(int argc, char* argv[])
     cout << "finished\n";
 }
 
-int main(int argc, char* argv[])
-{
 
+void test(int argc, char* argv[])
+{
     if (argc != 5)
         printUsageAndExit(argv[0]);
 
-//    string pathFilename(argv[1]);
-//    string infoOutputFilename(argv[2]);
-//    string splitAbstractOutputFilename(argv[3]);
+    int nThreads = atoi(argv[4]);
+
+    TagNodeFilterDict tagNodeFilterDict;
+
+    tagNodeFilterDict.add<ClassificationNodeFilter>(tags::classification);
+    tagNodeFilterDict.add<AbstractGreedyNodeFilter>(tags::abstract);
+
+    FileOutputFormatterDict fileOutputFormatterDict;
+
+    fileOutputFormatterDict.add<IdClassAbstractFileOutput>(argv[2]);
+    fileOutputFormatterDict.add<SplitAbstractFileOutput>(argv[3]);
+
+    CQueue<string> filenameQueue;
+    unordered_map<string, CQueue<string>> outputQueueByFile;
+
+    /* collect file paths */
+    XmlFileReader xmlFileReader(argv[1], filenameQueue);
+    xmlFileReader.runOnMain();
+
+    /* construct outputQueues in-place */
+    outputQueueByFile.emplace(piecewise_construct, make_tuple(argv[2]), make_tuple());
+    outputQueueByFile.emplace(piecewise_construct, make_tuple(argv[3]), make_tuple());
+
+    ThreadPool producers, consumers;
+    for (int i = 0; i < nThreads; i++)
+        producers.add<PatentTagTextCollector>(filenameQueue, outputQueueByFile,
+                fileOutputFormatterDict, tagNodeFilterDict);
+
+    for (auto& [filename, outputQueue] : outputQueueByFile)
+        consumers.add<PatentInfoWriter>(filename, outputQueue);
+
+    StatsThread<string, true> writeStats(outputQueueByFile[argv[2]], filenameQueue.totalPushedItems());
+
+    producers.runAll();
+    consumers.runAll();
+    writeStats.run();
+
+    producers.waitAll();
+    for (auto& [filename, outputQueue] : outputQueueByFile)
+        outputQueue.setQuitSignal();
+
+    consumers.waitAll();
+    writeStats.wait();
+
+    cout << "finished\n";
+}
+
+
+int main(int argc, char* argv[])
+{
+
+/*
+    if (argc != 5)
+        printUsageAndExit(argv[0]);
+
     int nThreads = atoi(argv[4]);
 
     PatentInfoPC pcPool(argv[1], argv[2], argv[3], nThreads);
@@ -87,6 +144,8 @@ int main(int argc, char* argv[])
     pcPool.runAll();
 
     pcPool.waitAll();
+*/
+    test(argc, argv);
 
     return 0;
 }

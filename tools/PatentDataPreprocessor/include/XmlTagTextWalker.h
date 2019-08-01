@@ -13,20 +13,21 @@
 #include <pugixml.hpp>
 
 #include "Utility.h"
-
-
-using TagTextDict = std::unordered_map<std::string, std::vector<std::string>>;
+#include "TagNodeFilterFunctors.h"
 
 
 class XmlTagTextWalker : public pugi::xml_tree_walker {
 
     TagTextDict tagTextDict_;
+    TagNodeFilterDict tagNodeFilterDict_;
 
 public:
 
-    explicit XmlTagTextWalker(const std::unordered_set<std::string>& tags);
+    explicit XmlTagTextWalker(const TagNodeFilterDict& tagNodeFilterDict);
 
     bool for_each(pugi::xml_node& node) override;
+
+    TagTextDict& getTagTexts() { return tagTextDict_; }
 
     const TagTextDict& getTagTexts() const { return tagTextDict_; }
 

@@ -33,7 +33,7 @@ class PatentInfoPC : public PCThreadPool<> {
 
 public:
 
-    explicit PatentInfoPC(const std::string& pathFilename,
+    PatentInfoPC(const std::string& pathFilename,
             std::string_view infoOutputFilename,
             std::string_view splitAbstractOutputFilename, int nProducers) :
         xmlFileReader_(pathFilename, filenameQueue_),

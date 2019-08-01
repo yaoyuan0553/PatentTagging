@@ -15,10 +15,6 @@
 #include <algorithm>
 
 
-/* type alias - one string per file output */
-using FileOutput = std::vector<std::string>;
-
-
 template <char newDelimiter, char oldDelimiter = ' '>
 std::string ReplaceDelimiter(const std::string& str)
 {
@@ -55,6 +51,8 @@ std::string ReplaceDelimiter(const std::string& str, char newDelimiter, char old
 }
 
 
+/* A functor class to split a paragraph into sentences delimited with a given delimiter
+ * may throw range_error when encounters unrecognized characters */
 class SplitParagraph {
     std::unordered_set<char32_t> separators_;
     std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter_;
@@ -70,7 +68,12 @@ class SplitParagraph {
     }
 
 public:
-    SplitParagraph(const std::initializer_list<char32_t>& separators) : separators_(separators) { }
+
+    inline static const std::initializer_list<char32_t> defaultSeparators =
+            { u'。', u'？', u'！', u'：', u'；' };
+
+    SplitParagraph(const std::initializer_list<char32_t>& separators = defaultSeparators) :
+        separators_(separators) { }
 
     SplitParagraph(const SplitParagraph& other) : separators_(other.separators_) { }
 
@@ -104,7 +107,20 @@ public:
 };
 
 
+#define DEFINE_DEFAULT_CLONE(cls) \
+    cls* clone() const override { return new cls(*this); }
 
+#define DECLARE_ABSTRACT_CLONE(cls) \
+    cls* clone() const override = 0
+
+
+struct Cloneable {
+    virtual Cloneable* clone() const = 0;
+};
+
+
+/* name alias for classes */
+using TagTextDict = std::unordered_map<std::string, std::vector<std::string>>;
 
 
 #endif //TOOLS_UTILITY_H

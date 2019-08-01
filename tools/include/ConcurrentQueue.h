@@ -32,7 +32,7 @@ class ConcurrentQueue {
 public:
     explicit ConcurrentQueue(const Container& cont = Container()) : queue_(cont) { }
     explicit ConcurrentQueue(Container&& cont) : queue_(cont) { }
-    ConcurrentQueue(const std::queue<T>&& other) : queue_(other) { }
+    explicit ConcurrentQueue(const std::queue<T>&& other) : queue_(other) { }
     template <class Alloc>
     explicit ConcurrentQueue(const Alloc& alloc) : queue_(alloc) { }
     template <class Alloc>
@@ -124,6 +124,11 @@ public:
         return quitSignal_.load();
     }
 };
+
+
+/* name alias for shortening class name */
+template <typename T, typename Container = std::deque<T>>
+using CQueue = ConcurrentQueue<T, Container>;
 
 
 #endif //TOOLS_CONCURRENTQUEUE_H

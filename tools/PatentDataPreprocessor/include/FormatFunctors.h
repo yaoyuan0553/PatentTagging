@@ -3,8 +3,8 @@
 //
 
 #pragma once
-#ifndef TOOLS_TAGTEXTFORMATTER_H
-#define TOOLS_TAGTEXTFORMATTER_H
+#ifndef TOOLS_FORMATFUNCTORS_H
+#define TOOLS_FORMATFUNCTORS_H
 
 #include <string>
 #include <vector>
@@ -15,6 +15,7 @@
 
 struct TagTextFormatterFunctor : public Cloneable {
     virtual std::string operator()(const std::string& text) = 0;
+    DECLARE_ABSTRACT_CLONE(TagTextFormatterFunctor);
 };
 
 
@@ -41,32 +42,32 @@ public:
 
 
 /* A mapped functor storing customized function to format inner text of based on a given tag */
-class TagTextFormatterDict : public FunctorDict<TagTextFormatterFunctor, std::string, const std::string&> {
+using TagTextFormatterDict = FunctorDict<TagTextFormatterFunctor, std::string, const std::string&>;
 
+
+struct FileOutputFormatter : public Cloneable {
+    virtual std::string operator()(const TagTextDict& tagTextDict) = 0;
+    DECLARE_ABSTRACT_CLONE(FileOutputFormatter);
 };
 
-class FileOutputFormatterDict : public std::unordered_map<std::string, TagTextFormatterDict> {
-    std::unordered_set<std::string> tags_;
 
+struct IdClassAbstractFileOutput : public FileOutputFormatter {
+    std::string operator()(const TagTextDict& tagTextDict) override;
+
+    DEFINE_DEFAULT_CLONE(IdClassAbstractFileOutput);
+};
+
+
+class SplitAbstractFileOutput : public FileOutputFormatter {
+    SplitParagraph splitParagraph_;
 public:
-    FileOutputFormatterDict() = default;
+    std::string operator()(const TagTextDict& tagTextDict) override;
 
-    const std::unordered_set<std::string>& getTags();
+    DEFINE_DEFAULT_CLONE(SplitAbstractFileOutput);
 };
 
-class FileOutputFormatter : public std::unordered_map<std::string, TagTextFormatterDict> {
-    using Filename = std::string;
-    std::unordered_set<std::string> tags_;
-public:
-    FileOutputFormatter() = default;
 
-    const std::unordered_set<std::string>& getTags()
-    {
-        for (const auto& [_, formatter] : *this)
-            tags_.insert(formatter.getKeys().begin(), formatter.getKeys().end());
+using FileOutputFormatterDict = FunctorDict<FileOutputFormatter, std::string, const TagTextDict&>;
 
-        return tags_;
-    }
-};
 
-#endif //TOOLS_TAGTEXTFORMATTER_H
+#endif //TOOLS_FORMATFUNCTORS_H

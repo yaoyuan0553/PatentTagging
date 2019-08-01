@@ -3,21 +3,45 @@
 //
 
 
-#include "TagTextFormatter.h"
+#include "FormatFunctors.h"
+
+#include <iostream>
 
 #include "Utility.h"
+#include "TagConstants.h"
 
 
-const std::unordered_set<std::string>& FileOutputFormatterDict::getTags()
+std::string IdClassAbstractFileOutput::operator()(const TagTextDict& tagTextDict)
 {
-    tags_.clear();
-    for (const auto&[_, formatter] : *this)
-        tags_.insert(formatter.getKeys().begin(), formatter.getKeys().end());
+    std::string output = tagTextDict.at(tags::filename)[0] + '\t';
+    for (const std::string& c : tagTextDict.at(tags::classification))
+        output += ReplaceDelimiter<'-'>(c) + ',';
 
-    return tags_;
+    output.back() = '\t';
+
+    for (const std::string& a : tagTextDict.at(tags::abstract))
+        output += ReplaceDelimiter<' '>(ReplaceDelimiter<' ', '\n'>(a));
+
+    output += '\n';
+
+    return output;
 }
 
-std::string AbstractFormatter::operator()(const std::string &text)
+std::string SplitAbstractFileOutput::operator()(const TagTextDict& tagTextDict)
 {
+    std::string output;
+    for (const std::string& c : tagTextDict.at(tags::abstract)) {
+        try {
+            output += splitParagraph_(ReplaceDelimiter<' '>(ReplaceDelimiter<' ', '\n'>(c)), '\n');
+        }
+        catch (std::range_error& e) {
+            std::cerr << e.what() << '\n';
+            std::cerr << '[' << tagTextDict.at(tags::filename)[0] << "]\n";
+            continue;
+        }
+    }
+    if (!output.empty())
+        output += "\n\n";
 
+    return output;
 }

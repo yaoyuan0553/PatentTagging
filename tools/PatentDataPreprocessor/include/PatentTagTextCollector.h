@@ -8,37 +8,42 @@
 
 #include <string>
 #include <initializer_list>
+#include <unordered_map>
 
 #include <ConcurrentQueue.h>
 #include "ThreadJob.h"
 #include "Utility.h"
 #include "XmlTagTextWalker.h"
-#include "TagTextFormatter.h"
+#include "FormatFunctors.h"
 
 
 class PatentTagTextCollector : public ThreadJob<> {
+    using OutputQueueByFile = std::unordered_map<std::string, CQueue<std::string>>;
+    using BatchOutputByFile = std::unordered_map<std::string, std::vector<std::string>>;
+
     XmlTagTextWalker walker_;
 
-    ConcurrentQueue<std::string>& filenameQueue_;
-    ConcurrentQueue<FileOutput>& outputQueue_;
+    CQueue<std::string>& filenameQueue_;
+    OutputQueueByFile& outputQueueByFile_;
 
-    static const std::initializer_list<char32_t> defaultSeparators_;
-    SplitParagraph paragraphSplit_;
+    FileOutputFormatterDict fileOutputFormatterDict_;
 
-    FileOutputFormatter& fileOutputFormatter_;
+    const int batchSize_;
 
     void internalRun() final;
 
-    void processTagTexts(const TagTextDict& tagTextDict);
+    void generateOutputText(BatchOutputByFile& batchOutputByFile);
 
 public:
-    PatentTagTextCollector(ConcurrentQueue<std::string>& filenameQueue,
-            ConcurrentQueue<FileOutput>& outputQueue,
-            FileOutputFormatter& fileOutputFormatter,
-            std::initializer_list<char32_t> separators = defaultSeparators_) :
-            walker_(fileOutputFormatter.getTags()),
-            filenameQueue_(filenameQueue), outputQueue_(outputQueue),
-            paragraphSplit_(separators), fileOutputFormatter_(fileOutputFormatter) { }
+    PatentTagTextCollector(CQueue<std::string>& filenameQueue,
+            OutputQueueByFile& outputQueueByFile,
+            const FileOutputFormatterDict& fileOutputFormatterDict,
+            const TagNodeFilterDict& tagNodeFilterDict,
+            const int batchSize = 128) :
+            walker_(tagNodeFilterDict),
+            filenameQueue_(filenameQueue), outputQueueByFile_(outputQueueByFile),
+            fileOutputFormatterDict_(fileOutputFormatterDict), batchSize_(batchSize) { }
+
 };
 
 

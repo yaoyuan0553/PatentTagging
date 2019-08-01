@@ -5,21 +5,21 @@
 #include "PatentTagTextCollector.h"
 
 #include <filesystem>
+#include <stdio.h>
 
 #include <pugixml.hpp>
 
+#include "TagConstants.h"
 
 
 namespace fs = std::filesystem;
 using namespace std;
 
-const initializer_list<char32_t> PatentTagTextCollector::defaultSeparators_ =
-        { u'。' };
-
 
 void PatentTagTextCollector::internalRun()
 {
-    for (;;)
+    unordered_map<string, vector<string>> batchOutputByFile;
+    for (int bN = 1;; bN++)
     {
         pugi::xml_document doc;
         auto [filename, quit] = filenameQueue_.pop();
@@ -40,17 +40,33 @@ void PatentTagTextCollector::internalRun()
             cerr << "[" << filename << "]\n";
             continue;
         }
+
+        // add name of current xml file to the collection
+        walker_.getTagTexts()[tags::filename].push_back(fs::path(filename).stem());
+
+        for (const string& outputFilename : fileOutputFormatterDict_.getKeys()) {
+            if (bN == 0)
+                batchOutputByFile[outputFilename].reserve(batchSize_);
+            batchOutputByFile[outputFilename].push_back(
+                    fileOutputFormatterDict_[outputFilename](walker_.getTagTexts()));
+        }
+
+        if (bN % batchSize_ == 0)
+            generateOutputText(batchOutputByFile);
     }
+    generateOutputText(batchOutputByFile);
 }
 
-
-void PatentTagTextCollector::processTagTexts(const TagTextDict& tagTextDict)
+void PatentTagTextCollector::generateOutputText(BatchOutputByFile& batchOutputByFile)
 {
-    for (const auto& [tag, textVec] : tagTextDict)
-    {
-        for (const auto& [filename, _] : fileOutputFormatter_);
-
+    for (auto&& [outputFilename, output] : batchOutputByFile) {
+        if (outputQueueByFile_.find(outputFilename) == outputQueueByFile_.end()) {
+            fprintf(stderr, "file entry [%s] not found\n", outputFilename.c_str());
+            exit(-1);
+        }
+        if (!output.empty())
+            outputQueueByFile_[outputFilename].push(output);
+        output.clear();
     }
 }
-
 
