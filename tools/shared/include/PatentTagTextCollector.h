@@ -11,7 +11,6 @@
 #include <unordered_map>
 
 #include <ConcurrentQueue.h>
-#include <bits/unordered_map.h>
 #include "ThreadJob.h"
 #include "Utility.h"
 #include "XmlTagTextWalker.h"
@@ -27,7 +26,7 @@ class PatentTagTextCollector : public ThreadJob<> {
     CQueue<std::string>& filenameQueue_;
     OutputQueueByFile& outputQueueByFile_;
 
-    FileOutputFormatterDict fileOutputFormatterDict_;
+    TagTextOutputFormatterDict fileOutputFormatterDict_;
 
     const int batchSize_;
 
@@ -38,7 +37,7 @@ class PatentTagTextCollector : public ThreadJob<> {
 public:
     PatentTagTextCollector(CQueue<std::string>& filenameQueue,
             OutputQueueByFile& outputQueueByFile,
-            const FileOutputFormatterDict& fileOutputFormatterDict,
+            const TagTextOutputFormatterDict& fileOutputFormatterDict,
             const TagNodeFilterDict& tagNodeFilterDict,
             const int batchSize = 128) :
             walker_(tagNodeFilterDict),

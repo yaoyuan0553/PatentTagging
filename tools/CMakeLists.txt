@@ -2,5 +2,6 @@ cmake_minimum_required(VERSION 3.10)
 
 project(tools)
 
+add_subdirectory(shared)
 add_subdirectory(PatentTagCollector)
 add_subdirectory(PatentDataPreprocessor)

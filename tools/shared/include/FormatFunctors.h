@@ -45,15 +45,15 @@ public:
 using TagTextFormatterDict = FunctorDict<TagTextFormatterFunctor, std::string, const std::string&>;
 
 
-struct FileOutputFormatter : public Cloneable {
+struct TagTextOutputFormatter : public Cloneable {
     virtual std::string operator()(const TagTextDict& tagTextDict) = 0;
-    DECLARE_ABSTRACT_CLONE(FileOutputFormatter);
+    DECLARE_ABSTRACT_CLONE(TagTextOutputFormatter);
 
-    virtual ~FileOutputFormatter() = default;
+    virtual ~TagTextOutputFormatter() = default;
 };
 
 
-struct IdClassAbstractFileOutput : public FileOutputFormatter {
+class IdClassAbstractFileOutput : public TagTextOutputFormatter {
     TruncateUnicodeString truncateUnicodeString_;
 public:
     std::string operator()(const TagTextDict& tagTextDict) override;
@@ -62,7 +62,10 @@ public:
 };
 
 
-class SplitAbstractFileOutput : public FileOutputFormatter {
+/* split abstract text into sentences separated by new lines
+ * may throw std::range_error when encountering non-unicode
+ * characters */
+class SplitAbstractFileOutput : public TagTextOutputFormatter {
     SplitParagraph splitParagraph_;
 public:
     std::string operator()(const TagTextDict& tagTextDict) override;
@@ -71,7 +74,15 @@ public:
 };
 
 
-using FileOutputFormatterDict = FunctorDict<FileOutputFormatter, std::string, const TagTextDict&>;
+class FirstClassFirstSpaceOutput : public TagTextOutputFormatter {
+public:
+    std::string operator()(const TagTextDict& tagTextDict) override;
+
+    DEFINE_DEFAULT_CLONE(FirstClassFirstSpaceOutput);
+};
+
+
+using TagTextOutputFormatterDict = FunctorDict<TagTextOutputFormatter, std::string, const TagTextDict&>;
 
 
 #endif //TOOLS_FORMATFUNCTORS_H

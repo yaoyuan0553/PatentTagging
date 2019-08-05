@@ -38,3 +38,15 @@ std::string SplitAbstractFileOutput::operator()(const TagTextDict& tagTextDict)
 
     return output;
 }
+
+std::string FirstClassFirstSpaceOutput::operator()(const TagTextDict& tagTextDict)
+{
+    const auto& classifications = tagTextDict.at(tags::classification);
+    if (!classifications.empty()) {
+        std::size_t space = classifications[0].find_first_of(' ');
+        if (space != std::string::npos)
+            return classifications[0].substr(0, space);
+    }
+
+    return "";
+}

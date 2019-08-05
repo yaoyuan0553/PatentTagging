@@ -13,6 +13,7 @@
 #include "PatentInfoCollector.h"
 #include "PatentInfoWriter.h"
 #include "PatentInfoPC.h"
+#include "ClassificationStatsWriter.h"
 
 #include "FormatFunctors.h"
 #include "TagConstants.h"
@@ -42,10 +43,10 @@ void start(int argc, char* argv[])
     tagNodeFilterDict.add<ClassificationNodeFilter>(tags::classification);
     tagNodeFilterDict.add<AbstractGreedyNodeFilter>(tags::abstract);
 
-    FileOutputFormatterDict fileOutputFormatterDict;
+    TagTextOutputFormatterDict tagTextOutputFormatterDict;
 
-    fileOutputFormatterDict.add<IdClassAbstractFileOutput>(argv[2]);
-    fileOutputFormatterDict.add<SplitAbstractFileOutput>(argv[3]);
+    tagTextOutputFormatterDict.add<IdClassAbstractFileOutput>(argv[2]);
+    tagTextOutputFormatterDict.add<SplitAbstractFileOutput>(argv[3]);
 
     CQueue<string> filenameQueue;
     unordered_map<string, CQueue<string>> outputQueueByFile;
@@ -61,7 +62,7 @@ void start(int argc, char* argv[])
     ThreadPool producers, consumers;
     for (int i = 0; i < nThreads; i++)
         producers.add<PatentTagTextCollector>(filenameQueue, outputQueueByFile,
-                fileOutputFormatterDict, tagNodeFilterDict);
+                tagTextOutputFormatterDict, tagNodeFilterDict);
 
     for (auto& [filename, outputQueue] : outputQueueByFile)
         consumers.add<PatentInfoWriter>(filename, outputQueue);
