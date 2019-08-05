@@ -47,7 +47,7 @@ class CollectClassificationStats : public XmlPCProcessorInterface {
     {
         for (int i = 0; i < nProducers_; i++)
             producers_.add<PatentTagTextCollector>(filenameQueue_, outputQueueByFile_,
-                    tagTextOutputFormatterDict_, tagNodeFilterDict_);
+                    tagTextOutputFormatterDict_, tagNodeFilterDict_, 1024);
         for (auto& [filename, outputQueue] : outputQueueByFile_)
             consumers_.add<ClassificationStatsWriter>(filename, outputQueue);
 
@@ -80,7 +80,7 @@ public:
 
 void printUsageAndExit(const char* program)
 {
-    printf("Usage:\n\t\t%s <path-file> <output-file> <num-threads>", program);
+    printf("Usage:\n\t\t%s <path-file> <output-file> <num-threads>\n", program);
     exit(-1);
 }
 

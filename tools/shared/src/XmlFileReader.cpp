@@ -2,8 +2,10 @@
 // Created by yuan on 7/24/19.
 //
 
-#include <fstream>
 #include "XmlFileReader.h"
+
+#include <fstream>
+#include <stdio.h>
 
 
 void XmlFileReader::internalRun()
@@ -14,9 +16,8 @@ void XmlFileReader::internalRun()
      * and quit gracefully */
     ifstream pathFile(pathFilename_);
     if (!pathFile.is_open()) {
-        std::cout << "file not opened\n";
-        filenameQueue_.setQuitSignal();
-        return;
+        fprintf(stderr, "file [%s] not opened\n", pathFilename_.c_str());
+        exit(-1);
     }
 
     int i = 0;

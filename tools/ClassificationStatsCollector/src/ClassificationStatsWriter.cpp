@@ -5,6 +5,7 @@
 #include "../include/ClassificationStatsWriter.h"
 
 #include <fstream>
+#include <iostream>
 
 void ClassificationStatsWriter::internalRun(CQueue<std::string>& data)
 {
@@ -18,6 +19,7 @@ void ClassificationStatsWriter::internalRun(CQueue<std::string>& data)
 
         countByTag_[tag]++;
     }
+
 
     ofstream outputFile(filename_);
     for (const auto& [tag, count] : countByTag_)
