@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <functional>
 #include <algorithm>
+#include <regex>
 
 
 /* replace multiple occurrences of the oldDelimiter (2nd template argument)
@@ -37,21 +38,13 @@ std::string ReplaceDelimiter(const std::string& str)
 }
 
 
-template <char = 0, char = 0>
-std::string ReplaceDelimiter(const std::string& str, char newDelimiter, char oldDelimiter)
+inline std::string RemoveExtraWhitespace(const std::string& str)
 {
-    using namespace std;
+    static const std::regex e("\\s+");
 
-    string newStr;
-    newStr.reserve(str.length());
-    stringstream ss(str);
-    for (string word; getline(ss, word, oldDelimiter);)
-        newStr += word + newDelimiter;
-
-    newStr.pop_back();  // remove the extra delimiter
-
-    return newStr;
+    return std::regex_replace(str, e, " ");
 }
+
 
 
 /* A functor class to split a paragraph into sentences delimited with a given delimiter
