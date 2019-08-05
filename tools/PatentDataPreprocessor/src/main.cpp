@@ -13,7 +13,6 @@
 #include "PatentInfoCollector.h"
 #include "PatentInfoWriter.h"
 #include "PatentInfoPC.h"
-#include "ClassificationStatsWriter.h"
 
 #include "FormatFunctors.h"
 #include "TagConstants.h"

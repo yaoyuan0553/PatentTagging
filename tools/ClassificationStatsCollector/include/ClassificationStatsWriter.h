@@ -14,7 +14,7 @@
 #include <ConcurrentQueue.h>
 
 
-class ClassificationStatsWriter : ThreadJob<CQueue<std::string>&> {
+class ClassificationStatsWriter : public ThreadJob<CQueue<std::string>&> {
     std::string filename_;
     std::unordered_map<std::string, uint64_t> countByTag_;
 
