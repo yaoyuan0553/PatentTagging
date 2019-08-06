@@ -15,4 +15,4 @@ target_include_directories(DiskIOSpeedBenchmark PRIVATE
         ${CMAKE_SOURCE_DIR}/shared/include
 )
 
-target_link_libraries(DiskIOSpeedBenchmark XmlSharedTools)
+target_link_libraries(DiskIOSpeedBenchmark XmlSharedTools rt)

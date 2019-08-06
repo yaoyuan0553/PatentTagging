@@ -12,10 +12,12 @@
 #include <sys/stat.h>
 #include <sys/fcntl.h>
 #include <unistd.h>
+#include <aio.h>
 
 #include <XmlFileReader.h>
 #include <PatentTagTextCollector.h>
 #include "XmlPCProcessorInterface.h"
+#include "StatsThread.h"
 
 
 using namespace std;
@@ -23,6 +25,13 @@ namespace fs = std::filesystem;
 
 using OutputQueueByFile = unordered_map<string, vector<string>>;
 
+inline size_t getFileSize(const char* filename)
+{
+    struct stat st;
+    if (stat(filename, &st) == 0)
+        return st.st_size;
+    return -1;
+}
 
 class DoNothingWriter : public ThreadJob<CQueue<string>&> {
     vector<string> filenames_;
@@ -183,6 +192,125 @@ public:
     }
 };
 
+class FileSizeReaderWithFopen : public ThreadJob<> {
+    CQueue<string>& filenameQueue_;
+
+
+    void internalRun() final
+    {
+        for (;;)
+        {
+            auto [filename, quit] = filenameQueue_.pop();
+            if (quit) break;
+
+            FILE* inputFile = fopen(filename.c_str(), "r");
+            if(!inputFile) {
+                cerr << "File opening failed\n";
+                continue;
+            }
+
+            fseek(inputFile, 0L, SEEK_END);
+            size_t numBytes = ftell(inputFile);
+
+            fseek(inputFile, 0L, SEEK_SET);
+
+            fclose(inputFile);
+        }
+    }
+public:
+    explicit FileSizeReaderWithFopen(CQueue<string>& filenameQueue) :
+            filenameQueue_(filenameQueue)
+    {
+    }
+
+    ~FileSizeReaderWithFopen() final
+    {
+    }
+};
+
+
+class FileSizeReaderWithStat : public ThreadJob<> {
+    CQueue<string>& filenameQueue_;
+
+
+    void internalRun() final
+    {
+        for (;;)
+        {
+            auto [filename, quit] = filenameQueue_.pop();
+            if (quit) break;
+
+            size_t fileSize = getFileSize(filename.c_str());
+        }
+    }
+public:
+    explicit FileSizeReaderWithStat(CQueue<string>& filenameQueue) :
+            filenameQueue_(filenameQueue)
+    {
+    }
+};
+
+
+class DoNothingWithRead : public ThreadJob<> {
+    CQueue<string>& filenameQueue_;
+
+    inline static constexpr size_t DEFAULT_BUFSIZE = 1024;
+
+    size_t bufferSize_;
+    char* buffer_;
+    aiocb cb_;
+
+    void resetAiocb()
+    {
+        memset(&cb_, 0, sizeof(aiocb));
+    }
+
+    void internalRun() final
+    {
+        for (;;)
+        {
+            auto [filename, quit] = filenameQueue_.pop();
+            if (quit) break;
+
+            size_t fileSize = getFileSize(filename.c_str());
+
+            if (bufferSize_ < fileSize) {
+                bufferSize_ = fileSize * 2;
+                delete[] buffer_;
+                buffer_ = new char[bufferSize_];
+            }
+
+            int fd = open(filename.c_str(), O_RDONLY);
+            if (fd == -1) {
+                fprintf(stderr, "Cannot open [%s]\n", filename.c_str());
+                continue;
+            }
+
+            resetAiocb();
+            cb_.aio_nbytes = fileSize;
+            cb_.aio_fildes = fd;
+            cb_.aio_offset = 0;
+            cb_.aio_buf = buffer_;
+
+            if (aio_read(&cb_) == -1) {
+                fprintf(stderr, "failed to create aio_read request for [%s]\n", filename.c_str());
+                continue;
+            }
+
+            close(fd);
+        }
+    }
+public:
+    explicit DoNothingWithRead(CQueue<string>& filenameQueue) :
+        filenameQueue_(filenameQueue), bufferSize_(DEFAULT_BUFSIZE),
+        buffer_(new char[bufferSize_]) { resetAiocb(); }
+
+    ~DoNothingWithRead() final
+    {
+        delete[] buffer_;
+    }
+};
+
 
 class DiskIOSpeedBenchmark : public XmlPCProcessorInterface {
     string pathFilename1_;
@@ -328,14 +456,18 @@ class DiskIOBenchmarkWithCRead : public XmlPCProcessorInterface {
     void initializeThreads() final
     {
         for (int i = 0; i < nProducers_; i++) {
-            producers_.add<DoNothingReader>(filenameQueue_);
+            producers_.add<DoNothingWithRead>(filenameQueue_);
         }
     }
 
     void executeThreads() final
     {
+        StatsThread<string, false> statsThread(filenameQueue_);
         producers_.runAll();
+        statsThread.run();
+
         producers_.waitAll();
+        statsThread.wait();
     }
 
 public:
@@ -371,13 +503,6 @@ void singleLargeFileFreadBenchmark(const char* filename)
     fclose(inputFile);
 }
 
-size_t getFileSize(const char* filename)
-{
-    struct stat st;
-    if (stat(filename, &st) == 0)
-        return st.st_size;
-    return -1;
-}
 
 void singleLargeFileReadBenchmark(const char* filename)
 {
@@ -404,6 +529,46 @@ void singleLargeFileReadBenchmark(const char* filename)
     delete[] buffer;
 }
 
+void singleLargeFileAioReadBenchmark(const char* filename)
+{
+    size_t size = getFileSize(filename);
+
+    cout << size << '\n';
+
+    int fd = open(filename, O_RDONLY);
+    if (fd == -1) {
+        fprintf(stderr, "Cannot open [%s]\n", filename);
+        exit(-1);
+    }
+
+    char* buffer = new char[size];
+
+    aiocb cb;
+    memset(&cb, 0, sizeof(aiocb));
+    cb.aio_nbytes = size;
+    cb.aio_fildes = fd;
+    cb.aio_offset = 0;
+    cb.aio_buf = buffer;
+
+    if (aio_read(&cb) == -1) {
+        fprintf(stderr, "aio_read failed on [%s]\n", filename);
+        exit(-1);
+    }
+
+    while (aio_error(&cb) == EINPROGRESS);
+
+//        cout << "waiting...\n";
+
+    if (size_t sizeRead = aio_return(&cb); sizeRead != (size_t)-1)
+        printf("Success: read %zu\n", sizeRead);
+    else
+        cout << "Failed\n";
+
+    close(fd);
+
+    delete[] buffer;
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -415,7 +580,7 @@ int main(int argc, char* argv[])
 
     diskIoBenchmarkWithCRead.process();
 */
-    singleLargeFileReadBenchmark(argv[1]);
+    singleLargeFileAioReadBenchmark(argv[1]);
 
     return 0;
 }
