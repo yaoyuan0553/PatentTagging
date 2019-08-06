@@ -61,6 +61,14 @@ public:
     DEFINE_DEFAULT_CLONE(IdClassAbstractFileOutput);
 };
 
+class IdSmallClassAbstractFileOutput : public TagTextOutputFormatter {
+    TruncateUnicodeString truncateUnicodeString_;
+public:
+    std::string operator()(const TagTextDict& tagTextDict) override;
+
+    DEFINE_DEFAULT_CLONE(IdSmallClassAbstractFileOutput);
+};
+
 
 /* split abstract text into sentences separated by new lines
  * may throw std::range_error when encountering non-unicode
@@ -71,6 +79,14 @@ public:
     std::string operator()(const TagTextDict& tagTextDict) override;
 
     DEFINE_DEFAULT_CLONE(SplitAbstractFileOutput);
+};
+
+
+class FirstClassOutput : public TagTextOutputFormatter {
+public:
+    std::string operator()(const TagTextDict& tagTextDict) override;
+
+    DEFINE_DEFAULT_CLONE(FirstClassOutput);
 };
 
 

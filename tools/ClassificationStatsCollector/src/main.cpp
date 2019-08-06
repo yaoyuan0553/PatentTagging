@@ -32,7 +32,7 @@ class CollectClassificationStats : public XmlPCProcessorInterface {
 
     void prepareOutputFormatters() final
     {
-        tagTextOutputFormatterDict_.add<FirstClassFirstSpaceOutput>(outputFilename_);
+        tagTextOutputFormatterDict_.add<FirstClassOutput>(outputFilename_);
     }
 
     void initializeData() final
@@ -55,18 +55,17 @@ class CollectClassificationStats : public XmlPCProcessorInterface {
 
     void executeThreads() final
     {
-        StatsThread<string, true> writeStats(outputQueueByFile_[outputFilename_],
-                filenameQueue_.totalPushedItems());
+        StatsThread<string, false> processedStats(filenameQueue_);
         producers_.runAll();
         consumers_.runAll();
-        writeStats.run();
+        processedStats.run();
 
         producers_.waitAll();
         for (auto& [_, outputQueue] : outputQueueByFile_)
             outputQueue.setQuitSignal();
 
         consumers_.waitAll();
-        writeStats.wait();
+        processedStats.wait();
     }
 
 

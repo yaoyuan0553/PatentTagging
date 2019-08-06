@@ -24,14 +24,15 @@ class StatsThread : public ThreadJob<> {
         for (;;)
         {
             auto i = dataQueue_.totalPoppedItems();
+            size_t n;
             if constexpr (presetTotal) {
-                bar.progress(i, total_);
+                n = total_;
             }
             else {
-                auto n = dataQueue_.totalPushedItems();
-                bar.progress(i, n);
+                n = dataQueue_.totalPushedItems();
             }
-            if (dataQueue_.isQuit())
+            bar.progress(i, n);
+            if (i == n && dataQueue_.isQuit())
                 break;
             // update every 1 seconds
             std::this_thread::sleep_for(std::chrono::seconds(1));

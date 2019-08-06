@@ -9,6 +9,10 @@
 #include <filesystem>
 #include <stdio.h>
 
+#include <sys/stat.h>
+#include <sys/fcntl.h>
+#include <unistd.h>
+
 #include <XmlFileReader.h>
 #include <PatentTagTextCollector.h>
 #include "XmlPCProcessorInterface.h"
@@ -347,7 +351,7 @@ void printUsageAndExit2(const char* program)
     exit(-1);
 }
 
-void singleLargeFileBenchmark(const char* filename)
+void singleLargeFileFreadBenchmark(const char* filename)
 {
     FILE* inputFile = fopen(filename, "r");
     if(!inputFile) {
@@ -367,16 +371,51 @@ void singleLargeFileBenchmark(const char* filename)
     fclose(inputFile);
 }
 
+size_t getFileSize(const char* filename)
+{
+    struct stat st;
+    if (stat(filename, &st) == 0)
+        return st.st_size;
+    return -1;
+}
+
+void singleLargeFileReadBenchmark(const char* filename)
+{
+    size_t size = getFileSize(filename);
+
+    cout << size << '\n';
+
+    int fd = open(filename, O_RDONLY);
+    if (fd == -1) {
+        fprintf(stderr, "Cannot open [%s]\n", filename);
+        exit(-1);
+    }
+
+    char* buffer = new char[size];
+
+    size_t sizeRead;
+    for (sizeRead = read(fd, buffer, size); sizeRead != 0; sizeRead = read(fd, buffer, size))
+        cout << sizeRead << '\n';
+
+    cout << sizeRead << '\n';
+
+    close(fd);
+
+    delete[] buffer;
+}
+
 
 int main(int argc, char* argv[])
 {
+/*
     if (argc != 3)
         printUsageAndExit2(argv[0]);
 
     DiskIOBenchmarkWithCRead diskIoBenchmarkWithCRead(argv[1], atoi(argv[2]));
 
     diskIoBenchmarkWithCRead.process();
-//    singleLargeFileBenchmark(argv[1]);
+*/
+    singleLargeFileReadBenchmark(argv[1]);
 
     return 0;
 }
