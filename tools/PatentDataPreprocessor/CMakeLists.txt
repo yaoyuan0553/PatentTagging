@@ -8,7 +8,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-add_executable(PatentDataPreprocessor src/main.cpp include/PatentInfoCollector.h src/PatentTagAbstractWalker.cpp include/PatentTagAbstractWalker.h src/PatentInfoCollector.cpp src/PatentInfoWriter.cpp include/PatentInfoWriter.h src/test.cpp include/PatentInfoPC.h src/PatentInfoPC.cpp)
+add_executable(PatentDataPreprocessor src/main.cpp include/PatentInfoCollector.h src/PatentTagAbstractWalker.cpp include/PatentTagAbstractWalker.h src/PatentInfoCollector.cpp src/test.cpp include/PatentInfoPC.h src/PatentInfoPC.cpp)
 
 target_include_directories(PatentDataPreprocessor PRIVATE
         ${CMAKE_SOURCE_DIR}/cpptqdm

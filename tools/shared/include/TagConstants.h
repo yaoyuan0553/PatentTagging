@@ -17,6 +17,10 @@ namespace tags
 
     // special tag used to store file name of the current xml file
     constexpr char filename[] = "filename";
+
+    constexpr char invention_title[] = "invention-title";
+    constexpr char description[] = "description";
+    constexpr char claims[] = "claims";
 }
 
 

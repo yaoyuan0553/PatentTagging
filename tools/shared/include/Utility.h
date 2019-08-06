@@ -68,7 +68,7 @@ class SplitParagraph {
 public:
 
     inline static const std::initializer_list<char32_t> defaultSeparators =
-            { u'。', u'？', u'！', u'：', u'；' };
+            { u'。', u'？', u'！', u'：'};
 
     SplitParagraph(const std::initializer_list<char32_t>& separators = defaultSeparators) :
         separators_(separators) { }
