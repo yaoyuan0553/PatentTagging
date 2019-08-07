@@ -672,7 +672,7 @@ inline static int io_getevents(aio_context_t ctx, long min_nr, long max_nr,
 	} while (0)
 
 
-void singleLargeFileIoSubmitBenchmark(const char* filename)
+void singleLargeFileIoSubmitSingleBenchmark(const char* filename)
 {
     size_t size = getFileSize(filename);
 
@@ -692,10 +692,6 @@ void singleLargeFileIoSubmitBenchmark(const char* filename)
     cb1.aio_fildes = fd;
     cb1.aio_lio_opcode = IOCB_CMD_PREAD;
     cb1.aio_buf = (__u64)buffer;
-
-    iocb cb2;
-    memset(&cb2, 0, sizeof(iocb));
-
 
     iocb* iocbList[1] = {&cb1};
 
@@ -720,6 +716,146 @@ void singleLargeFileIoSubmitBenchmark(const char* filename)
 }
 
 
+class FileInfo {
+    inline static constexpr size_t INIT_BUF_SIZE = 1 << 15;
+
+    string filename_;
+    size_t size_ = INIT_BUF_SIZE;
+    iocb cb_;
+    char* buffer_;
+
+public:
+    FileInfo() : buffer_(new char[size_ + 1])
+    {
+
+    }
+
+    explicit FileInfo(string_view filename) : buffer_(new char[size_ + 1])
+    {
+        loadNewFile(filename);
+    }
+
+    void loadNewFile(string_view filename)
+    {
+        if (filename_ == filename)
+            return;
+
+        filename_ = filename;
+
+        /* measure file size and allocate corresponding buffer */
+        size_t oldSize = size_;
+        size_ = getFileSize(filename_.c_str());
+        if (oldSize < size_) {
+            delete[] buffer_;
+            buffer_ = new char[size_ + 1];
+            buffer_[size_] = 0;
+        }
+
+        /* initialize iocb object */
+        memset(&cb_, 0, sizeof(decltype(cb_)));
+        cb_.aio_nbytes = size_;
+        cb_.aio_fildes = open(filename_.c_str(), O_RDONLY);
+
+        if (cb_.aio_fildes == -1) {
+            fprintf(stderr, "Cannot open [%s]\n", filename_.c_str());
+            exit(-1);
+        }
+
+        cb_.aio_lio_opcode = IOCB_CMD_PREADV;
+        cb_.aio_buf = (size_t)buffer_;
+    }
+
+    iocb* getIocbPtr() { return &cb_; }
+
+    ~FileInfo()
+    {
+        close(cb_.aio_fildes);
+        delete[] buffer_;
+    }
+};
+
+
+void singleLargeFileIoSubmitMultipleBenchmark(CQueue<string>& pathFileQueue)
+{
+    aio_context_t ctx = 0;
+    int ret = io_setup(128, &ctx);
+    if (ret < 0)
+        PFATAL("io_setup()");
+
+    constexpr int nFilesToRead = 2;
+
+    FileInfo fileInfos[nFilesToRead];
+    iocb** iocbList = new iocb*[nFilesToRead];
+
+    for (int i = 0; i < nFilesToRead; i++)
+    {
+        auto [filename, quit] = pathFileQueue.pop();
+
+        if (quit) break;
+
+        fileInfos[i].loadNewFile(filename);
+        iocbList[i] = fileInfos[i].getIocbPtr();
+    }
+
+    ret = io_submit(ctx, nFilesToRead, iocbList);
+    if (ret != nFilesToRead) {
+//        cout << ret << endl;
+        PFATAL("io_submit()");
+    }
+
+    io_event events[1] = {};
+    ret = io_getevents(ctx, nFilesToRead, nFilesToRead, events, nullptr);
+    if (ret != nFilesToRead)
+        PFATAL("io_getevents()");
+
+    io_destroy(ctx);
+
+    delete[] iocbList;
+}
+
+
+inline void queueFileForRead(const char* filename)
+{
+    size_t size = getFileSize(filename);
+
+    cout << size << '\n';
+
+    int fd = open(filename, O_RDONLY);
+    if (fd == -1) {
+        fprintf(stderr, "Cannot open [%s]\n", filename);
+        exit(-1);
+    }
+
+    char* buffer = new char[size];
+
+    iocb cb1;
+    memset(&cb1, 0, sizeof(iocb));
+    cb1.aio_nbytes = size;
+    cb1.aio_fildes = fd;
+    cb1.aio_lio_opcode = IOCB_CMD_PREAD;
+    cb1.aio_buf = (__u64)buffer;
+
+    iocb* iocbList[1] = {&cb1};
+
+    aio_context_t ctx = 0;
+    int ret = io_setup(128, &ctx);
+    if (ret < 0)
+        PFATAL("io_setup()");
+
+    ret = io_submit(ctx, 1, iocbList);
+    if (ret != 1)
+        PFATAL("io_submit()");
+
+    io_event events[1] = {};
+    ret = io_getevents(ctx, 1, 1, events, NULL);
+    if (ret != 1)
+        PFATAL("io_getevents()");
+
+    io_destroy(ctx);
+    close(fd);
+
+    delete[] buffer;
+}
 
 int main(int argc, char* argv[])
 {
@@ -731,7 +867,13 @@ int main(int argc, char* argv[])
 
     diskIoBenchmarkWithCRead.process();
 */
-    singleLargeFileIoSubmitBenchmark(argv[1]);
+//    singleLargeFileIoSubmitSingleBenchmark(argv[1]);
+
+    CQueue<string> filenameQueue;
+    filenameQueue.push("/media/yuan/Samsung_T5/Documents/patent/alltext-2016.txt");
+    filenameQueue.push("/media/yuan/Samsung_T5/Documents/patent/dev.tsv");
+
+    singleLargeFileIoSubmitMultipleBenchmark(filenameQueue);
 
     return 0;
 }
