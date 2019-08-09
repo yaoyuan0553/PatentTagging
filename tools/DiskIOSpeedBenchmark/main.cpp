@@ -16,6 +16,7 @@
 #include <linux/aio_abi.h>
 #include <poll.h>
 #include <sys/syscall.h>
+#include <sys/uio.h>
 
 #include <XmlFileReader.h>
 #include <PatentTagTextCollector.h>
@@ -725,10 +726,7 @@ class FileInfo {
     char* buffer_;
 
 public:
-    FileInfo() : buffer_(new char[size_ + 1])
-    {
-
-    }
+    FileInfo() : buffer_(new char[size_ + 1]) { }
 
     explicit FileInfo(string_view filename) : buffer_(new char[size_ + 1])
     {
@@ -761,7 +759,7 @@ public:
             exit(-1);
         }
 
-        cb_.aio_lio_opcode = IOCB_CMD_PREADV;
+        cb_.aio_lio_opcode = IOCB_CMD_PREAD;
         cb_.aio_buf = (size_t)buffer_;
     }
 
@@ -857,6 +855,195 @@ inline void queueFileForRead(const char* filename)
     delete[] buffer;
 }
 
+
+template <typename RequestType>
+class File {
+    inline static constexpr size_t INIT_BUF_SIZE = 1 << 15;
+
+    const char*     filename_;
+    int             fd_;
+    size_t          size_;
+    char*           buffer_;
+    RequestType     request_;
+
+    bool            isOpen_ = false;
+
+public:
+    enum class IoType { R, W, RW };
+
+    File() : size_(INIT_BUF_SIZE), buffer_(new char[size_]) { }
+
+    template <typename InitRequest>
+    File(const char* filename, IoType ioType, InitRequest&& initRequest)
+    {
+        if (!open(filename, ioType, std::forward<InitRequest>(initRequest)))
+            throw std::exception();
+    }
+
+    template <typename InitRequest>
+    bool open(const char* filename, IoType ioType, InitRequest&& initRequest)
+    {
+        static_assert(is_invocable_v<InitRequest, RequestType&, decltype(this)>,
+                      "InitRequest be of type T(*)(RequestType&)");
+        filename_ = filename;
+
+        int flag;
+        switch (ioType)
+        {
+        case IoType::R:
+            size_ = getFileSize(filename_);
+            flag = O_RDONLY;
+            break;
+        case IoType::W:
+            size_ = INIT_BUF_SIZE;
+            flag = O_WRONLY;
+            break;
+        case IoType::RW:
+            size_ = INIT_BUF_SIZE;
+            flag = O_RDWR;
+            break;
+        default:
+            fprintf(stderr, "wrong argument\n");
+            return false;
+        }
+
+        fd_ = open(filename_, flag);
+        if (fd_ == -1) {
+            fprintf(stderr, "%s: failed to open [%s]\n", __FUNCTION__, filename_);
+
+            return false;
+        }
+
+        buffer_ = new char[size_];
+        initRequest(request_, this);
+
+        isOpen_ = true;
+        return true;
+    }
+
+    inline bool isOpen() const { return isOpen_; }
+
+    ~File() { delete[] buffer_; }
+};
+
+
+/*
+template <int n, typename RequestType>
+class FileCollection {
+    File<RequestType> files_[n];
+    RequestType requestType_[n];
+    int filesOpened_ = 0;
+public:
+    FileCollection() = default;
+
+    template <typename InitRequest>
+    bool openFile(const char* filename, typename File<RequestType>::IoType ioType,
+            InitRequest&& initRequest)
+    {
+        if (filesOpened_ >= n)
+            return false;
+
+    }
+
+    void readAll();
+};
+*/
+
+template <int n>
+class FileCollection {
+    inline static constexpr size_t INIT_BUF_SIZE = 1 << 15;
+
+    char* filename_[n];
+    int fd_[n];
+    size_t fileSize_[n];
+    char* buffer_[n];
+    size_t bufferSize_[n];
+    iovec request_[n];
+    bool filled_[n];
+
+public:
+    FileCollection()
+    {
+        fill_n(filled_, n, false);
+        fill_n(fileSize_, n, 0);
+        fill_n(bufferSize_, n, INIT_BUF_SIZE);
+        for (int i = 0; i < n; i++)
+            buffer_[i] = new char[bufferSize_[i]];
+    }
+
+    bool openFile(int i, const char* filename)
+    {
+        if (i >= n)
+            throw range_error("FileCollection::openFile() i out of range");
+
+        filename_[i] = filename;
+        fileSize_[i] = getFileSize(filename);
+        fd_[i] = open(filename, O_RDONLY);
+        if (fd_[i] == -1) {
+            fprintf(stderr, "%s: failed to open [%s]\n", __FUNCTION__, filename_);
+            filled_[i] = false;
+            return false;
+        }
+        if (bufferSize_[i] < fileSize_[i]) {
+            delete[] buffer_[i];
+            bufferSize_[i] <<= 1;
+            buffer_[i] = new char[bufferSize_[i]];
+        }
+        request_[i] = {
+                .iov_base = buffer_[i],
+                .iov_len = fileSize_[i]
+        };
+        filled_[i] = true;
+
+        return true;
+    }
+
+    bool readAll()
+    {
+        if (!all_of(filled_, filled_ + n, [](bool b) { return b; })) {
+            fprintf(stderr, "%s: not all files are open\n", __FUNCTION__);
+            return false;
+        }
+    }
+
+    ~FileCollection()
+    {
+        for (int i = 0; i < n; i++)
+            delete[] buffer_[i];
+    }
+};
+
+
+void singleLargeFileReadvBenchmark(const char* filename)
+{
+    size_t size = getFileSize(filename);
+
+    cout << size << '\n';
+
+    int fd = open(filename, O_RDONLY);
+    if (fd == -1) {
+        fprintf(stderr, "Cannot open[%s]\n", filename);
+        exit(-1);
+    }
+
+    char* buffer = new char[size];
+
+    iovec iov = {
+            .iov_base = buffer,
+            .iov_len = size
+    };
+
+    ssize_t sizeRead = readv(fd, &iov, 1);
+    if (sizeRead == -1)
+        PFATAL("readv()");
+
+    cout << sizeRead << '\n';
+
+    close(fd);
+    delete[] buffer;
+}
+
+
 int main(int argc, char* argv[])
 {
 /*
@@ -869,11 +1056,14 @@ int main(int argc, char* argv[])
 */
 //    singleLargeFileIoSubmitSingleBenchmark(argv[1]);
 
+/*
     CQueue<string> filenameQueue;
     filenameQueue.push("/media/yuan/Samsung_T5/Documents/patent/alltext-2016.txt");
     filenameQueue.push("/media/yuan/Samsung_T5/Documents/patent/dev.tsv");
+*/
 
-    singleLargeFileIoSubmitMultipleBenchmark(filenameQueue);
+//    singleLargeFileIoSubmitMultipleBenchmark(filenameQueue);
+    singleLargeFileReadvBenchmark(argv[1]);
 
     return 0;
 }
