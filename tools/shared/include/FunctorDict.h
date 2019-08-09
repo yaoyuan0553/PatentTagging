@@ -6,6 +6,8 @@
 #ifndef TOOLS_FUNCTORDICT_H
 #define TOOLS_FUNCTORDICT_H
 
+#include <map>
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <type_traits>
@@ -20,8 +22,8 @@ class FunctorDict {
     static_assert(std::is_invocable_r_v<Ret, Functor, Args...>,
     "Functor must be of callable of type string(*)(const string&)");
 
-    std::unordered_map<std::string, Functor*> functorDict_;
-    std::unordered_set<std::string> keys_;
+    std::map<std::string, Functor*> functorDict_;
+    std::set<std::string> keys_;
 
 public:
     auto& operator[](const std::string& str) { return *functorDict_[str]; }
@@ -35,7 +37,7 @@ public:
         return true;
     }
 
-    const std::unordered_set<std::string>& getKeys() const { return keys_; }
+    const std::set<std::string>& getKeys() const { return keys_; }
 
     FunctorDict() = default;
 

@@ -14,6 +14,7 @@
 #include <functional>
 #include <algorithm>
 #include <regex>
+#include <map>
 
 
 /* replace multiple occurrences of the oldDelimiter (2nd template argument)
@@ -146,7 +147,7 @@ struct Cloneable {
 /* name alias for classes */
 
 /* For storing Tag as key and vector of Texts as value */
-using TagTextDict = std::unordered_map<std::string, std::vector<std::string>>;
+using TagTextDict = std::map<std::string, std::vector<std::string>>;
 
 
 #endif //TOOLS_UTILITY_H
