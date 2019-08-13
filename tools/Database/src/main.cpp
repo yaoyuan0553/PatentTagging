@@ -206,8 +206,10 @@ class GenerateDatabase : public XmlPCProcessorInterface {
         for (int i = 0; i < nProducers_; i++)
             producers_.add<PatentTagTextCollector>(filenameQueue_, outputQueueByFile_,
                                                    tagTextOutputFormatterDict_, tagNodeFilterDict_, 1024);
+/*
         for (auto& [filename, outputQueue] : outputQueueByFile_)
             consumers_.add<>(filename, outputQueue);
+*/
 
     }
 
@@ -234,10 +236,44 @@ public:
     { nProducers_ = nProducers; }
 };
 
+void testDataType()
+{
+    cout << sizeof(IndexValue) << endl;
+    cout << IndexValue::INDEX_VALUE_STATIC_SIZE << endl;
+
+    IndexValue idxVal1;
+    idxVal1.datId = 32;
+    strcpy(idxVal1.publicationId, "US20140026733A1-20140130");
+    strcpy(idxVal1.applicationId, "US13945385-20130718");
+    idxVal1.ti = 0; idxVal1.ai = 0; idxVal1.ci = 0; idxVal1.di = 0;
+    idxVal1.classCount = 2;
+
+    ClassificationString c1, c2;
+    strcpy(c1.data(), "B01F-3/04-(2006.01)");
+    strcpy(c2.data(), "C02F-1/44-(2006.01)");
+    idxVal1.classifications().push_back(c1);
+    idxVal1.classifications().push_back(c2);
+
+    cout << idxVal1.getTotalBytes() << endl;
+
+    char* buffer = new char[200];
+
+    int sizeWritten = 0;
+    if (!idxVal1.save(buffer, 200, &sizeWritten))
+        cout << "what\n";
+
+    IndexValue idxVal2;
+    idxVal2.load(buffer);
+
+    printf("what\n");
+
+    delete[] buffer;
+}
+
 
 int main()
 {
-    cout << "Hello\n";
+    testDataType();
 
     return 0;
 }
