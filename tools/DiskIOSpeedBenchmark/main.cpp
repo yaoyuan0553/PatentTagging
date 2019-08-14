@@ -1061,14 +1061,25 @@ int main(int argc, char* argv[])
 
     diskIoBenchmarkWithCRead.process();
 */
-//    singleLargeFileIoSubmitSingleBenchmark(argv[1]);
+    singleLargeFileFreadBenchmark(argv[1]);
 
+/*
+    ifstream ifs(argv[1]);
+    if (!ifs.is_open())
+        PERROR("ifstream");
+    stringstream ss;
+    ss << ifs.rdbuf();
+    ifs.close();
+*/
+
+/*
     CQueue<string> filenameQueue;
     XmlPathFileReader xmlFileReader(argv[1], filenameQueue);
 
     xmlFileReader.runOnMain();
 
     multipleFileIoSubmitBenchmark(filenameQueue);
+*/
 //    singleLargeFileReadvBenchmark(argv[1]);
 
     return 0;
