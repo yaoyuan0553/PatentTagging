@@ -147,10 +147,11 @@ class DatabaseFileWriter : public ThreadJob<CQueue<DataRecord*>&> {
     int binNo_ = 0;
 
     /* two kinds of entry (pid & aid) to find index entries */
-    IndexTable pidIndexTable_, aidIndexTable_;
+    IndexTableWithSpecificKey pidIndexTable_, aidIndexTable_;
     /* where real index value stores memory released on class
      * destruction */
     vector<IndexValue*> indexValueList;
+    IndexTable& indexTable_;
 
     vector<string> tagsToWrite_;
 
@@ -160,8 +161,6 @@ class DatabaseFileWriter : public ThreadJob<CQueue<DataRecord*>&> {
     /* data file buffer */
     DataRecordFile dataRecordFile_;
     uint32_t nRecords = 0;
-
-    bool threadRan = false;
 
     void internalRun(CQueue<DataRecord*>& outputQueue) final
     {
@@ -174,23 +173,23 @@ class DatabaseFileWriter : public ThreadJob<CQueue<DataRecord*>&> {
             appendToIndexTable(record);
             appendToDataRecordFile(record);
 
-            // release memory of DataRecord
+            // release memory of DataRecord already copied/processed data
+            // of this record and add them into index table & data file
             delete record;
         }
-        threadRan = true;
     }
 
 
     void appendToIndexTable(DataRecord* record)
     {
-        indexValueList.push_back(new IndexValue);
-
-        indexValueList.back()->pid = record->at(tags::publication_reference)[0];
-        indexValueList.back()->aid = record->at(tags::application_reference)[0];
+        indexTable_.appendIndexValue([&](IndexValue* iv) {
+            iv->pid = record->at(tags::publication_reference)[0];
+            iv->aid = record->at(tags::application_reference)[0];
 //         TODO: appDate
 //        indexValueList.back()->appDate = record->()
-        indexValueList.back()->binId = binNo_;
-        indexValueList.back()->ipcList = record->at(tags::classification);
+            iv->binId = binNo_;
+            iv->ipcList = record->at(tags::classification);
+        });
         // TODO: ti, ai, ci, di, offset
     }
 
@@ -203,7 +202,7 @@ class DatabaseFileWriter : public ThreadJob<CQueue<DataRecord*>&> {
             tagFormattedText.push_back(databaseOutputFormatterDict_[tag](record->at(tag)));
             recordSize += tagFormattedText.back().length();
         }
-        if (!dataRecordFile_.appendRecord(recordSize, tagFormattedText)) {
+        if (!dataRecordFile_.appendRecord(tagFormattedText, recordSize)) {
             fs::path binFilename = rootDir_ / binFilename_;
             binFilename += to_string(binNo_) + ".bin";
 #ifdef DEBUG
@@ -212,9 +211,9 @@ class DatabaseFileWriter : public ThreadJob<CQueue<DataRecord*>&> {
             // synchronized version. in async, there should be multiple DataRecordFile
             // to avoid clearing buffer before I/O finishes
             dataRecordFile_.writeToFile(binFilename.c_str());
-            dataRecordFile_.reset();
+            dataRecordFile_.clear();
             binNo_++;
-            if (!dataRecordFile_.appendRecord(recordSize, tagFormattedText)) {
+            if (!dataRecordFile_.appendRecord(tagFormattedText, recordSize)) {
                 fprintf(stderr, "%s: something is wrong here %d\n", __FUNCTION__, __LINE__);
                 exit(-1);
             }
@@ -224,16 +223,15 @@ class DatabaseFileWriter : public ThreadJob<CQueue<DataRecord*>&> {
 
 public:
     DatabaseFileWriter(const fs::path& rootDir, CQueue<DataRecord*>& outputQueue,
-            const vector<string>& tagsToWrite, const int recordsPerFile = RECORDS_PER_FILE) :
+            const vector<string>& tagsToWrite, IndexTable& indexTable,
+            const int recordsPerFile = RECORDS_PER_FILE) :
         ThreadJob(outputQueue), rootDir_(rootDir), recordsPerFile_(recordsPerFile),
-        tagsToWrite_(tagsToWrite) { }
+        indexTable_(indexTable), tagsToWrite_(tagsToWrite) { }
 
     ~DatabaseFileWriter() final
     {
-        if (threadRan) {
-            for (IndexValue* iv : indexValueList)
-                delete iv;
-        }
+        for (IndexValue* iv : indexValueList)
+            delete iv;
     }
 };
 
@@ -300,12 +298,154 @@ public:
 };
 
 
+void testDataRecordFile()
+{
+    DataRecordFile dataRecordFile;
+
+    vector<string> records = {"title", "abstract", "claim", "abstract"};
+
+/*
+    uint32_t recordSize = sizeof(uint32_t) * 5;
+    for (const auto& r : records)
+        recordSize += r.length();
+
+*/
+    dataRecordFile.appendRecord(records);
+
+    dataRecordFile.writeToFile("test.bin");
+
+    dataRecordFile.clear();
+
+    printf("should be empty\n");
+
+    dataRecordFile.readFromFile("test.bin");
+
+    DataRecordEntry dre = dataRecordFile.GetRecordAtOffset(0);
+    cout << dre.size;
+
+    printf("check dre\n");
+}
+
+void testIndexValueStream()
+{
+    IndexValue iv;
+    iv.pid = "pid";
+    iv.aid = "aid";
+    iv.appDate = "appDate";
+    iv.binId = 1;
+    iv.offset = 2;
+    iv.ti = 3;
+    iv.ai = 4;
+    iv.ci = 5;
+    iv.di = 6;
+    iv.ipcList = {"okay", "hello"};
+
+    cout << iv << '\n';
+    stringstream ss("ppp\taaaaa\taappp\t2\t3\t2222\t4444\t555\t12\thuehue,haha\t23");
+    ss >> iv;
+
+    cout << iv << '\n';
+
+    printf("stop here\n");
+}
+
+void generateRandomString(char *s, const int len)
+{
+    static const char alphanum[] =
+            "0123456789"
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            "abcdefghijklmnopqrstuvwxyz";
+    for (int i = 0; i < len; ++i) {
+        s[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+    }
+    s[len] = 0;
+}
 
 
+void testIndexTableMemUsage()
+{
+    constexpr int N = 20000000;
+    // 2000,0000 IndexValues uses about 3.4 GB of memory
+    std::vector<IndexValue*> ivList;
+    ivList.reserve(N);
+
+    // each table with 2000,0000 entries uses about
+    // 3.3 GB of memory
+    unordered_map<string, vector<IndexValue*>> table1;
+    unordered_map<string, vector<IndexValue*>> table2;
+
+    table1.reserve(N);
+    table2.reserve(N);
+
+    printf("test here\n");
+
+    constexpr int keyLen = 40;
+    char str[keyLen + 1];
+    for (int i = 0; i < N; i++) {
+        ivList.push_back(new IndexValue);
+        generateRandomString(str, keyLen);
+        table1[string(str)].push_back(ivList.back());
+        generateRandomString(str, keyLen);
+        table2[string(str)].push_back(ivList.back());
+    }
+
+    printf("press to delete all pointers ");
+    getchar();
+
+    for (int i = 0; i < N; i++)
+        delete ivList[i];
+
+    printf("press to exit\n");
+    getchar();
+}
+
+
+void getlineTest()
+{
+    ofstream ofs("test.tmp");
+    string str("test\tokay  yea\t\t  blah\nx\nz y\n");
+    ofs << str;
+    ofs.close();
+
+    ifstream ifs("test.tmp");
+    for (string line; getline(ifs, line);) {
+        cout << line << '\n';
+        istringstream ss(line);
+        for (string field; getline(ss, field, '\t');) {
+            if (field.empty()) continue;
+            cout << field << '\n';
+        }
+        cout << "---------------\n";
+    }
+    ifs.close();
+}
+
+void testIndexTable()
+{
+    constexpr int N = 20000000;
+
+    IndexTable indexTable({IndexTable::PID, IndexTable::AID});
+
+    indexTable.reserve(N);
+
+    constexpr int keyLen = 25;
+    char str[keyLen + 1];
+    for (int i = 0; i < N; i++) {
+        indexTable.appendIndexValue([&](IndexValue* iv) {
+            generateRandomString(str, keyLen);
+            iv->pid = str;
+            generateRandomString(str, keyLen);
+            iv->aid = str;
+        });
+    }
+
+    printf("finished making index values");
+    getchar();
+}
 
 int main()
 {
-
+    testIndexTable();
 
     return 0;
 }

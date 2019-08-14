@@ -15,6 +15,8 @@
 #include <string.h>
 #include <array>
 #include <map>
+#include <iostream>
+#include <set>
 
 #include <Utility.h>
 
@@ -28,9 +30,19 @@ constexpr int PUBLICATION_ID_SIZE = 25;
 constexpr int CLASSIFICATION_SIZE = 21;
 
 
+/********************************/
+/*    abstract interface types  */
+/********************************/
+
 struct Stringifiable {
     virtual std::string stringify() const = 0;
-    virtual ~Stringifiable() = 0;
+    virtual ~Stringifiable() = default;
+};
+
+struct FileReadWritable {
+    virtual void readFromFile(const char* filename) = 0;
+    virtual void writeToFile(const char* filename) = 0;
+    virtual ~FileReadWritable() = default;
 };
 
 
@@ -173,6 +185,9 @@ public:
 */
 
 struct IndexValue : public Stringifiable {
+    // WARNING: update this when IndexValue is changed
+    inline static constexpr int N_FIELDS = 10;
+
     std::string                 pid, aid, appDate;
     uint32_t                    binId, offset, ti, ai, ci, di;
     std::vector<std::string>    ipcList;
@@ -190,6 +205,10 @@ struct IndexValue : public Stringifiable {
 
         return str;
     }
+
+    /* for file I/O */
+    friend std::ostream& operator<<(std::ostream& os, const IndexValue& ie);
+    friend std::istream& operator>>(std::istream& is, IndexValue& ie);
 };
 
 
@@ -199,10 +218,14 @@ public:
     {
         return first + '\t' + second->stringify();
     }
+
 };
 
 
-class IndexTable :
+/* Index table with a specific key
+ * table value are pointers pointing to
+ * data stored elsewhere */
+class IndexTableWithSpecificKey :
         public std::unordered_map<IndexKey, IndexValue*,
             std::hash<IndexKey>, std::equal_to<IndexKey>, std::allocator<IndexEntry>>,
         public Stringifiable {
@@ -219,12 +242,97 @@ public:
     }
 };
 
+/* Index Table configurable with multiple types of keys
+ * to lookup data value */
+class IndexTable : public FileReadWritable {
+public:
+    // only supports PID and AID for now
+    enum IndexKeyType {
+        PID, AID, APPDATE, TITLE, IPC
+    };
+
+private:
+    /* data storage */
+    std::vector<IndexValue*> valList_;
+
+    /* hash tables for retrieving data */
+    std::map<IndexKeyType, IndexTableWithSpecificKey> indexTables_;
+
+public:
+
+    IndexTable(const std::vector<IndexKeyType>& ikeyTypes)
+    {
+        for (IndexKeyType kt : ikeyTypes)
+            indexTables_[kt] = IndexTableWithSpecificKey();
+    }
+
+    ~IndexTable() final
+    {
+        for (IndexValue* iv : valList_)
+            delete iv;
+    }
+
+    inline IndexTableWithSpecificKey& operator[](IndexKeyType kt)
+    {
+        return indexTables_[kt];
+    }
+
+    inline size_t numRecords() const { return valList_.size(); }
+
+    inline std::vector<IndexValue*>& indexValueList() { return valList_; }
+
+    inline const std::vector<IndexValue*>& indexValueList() const { return valList_; }
+
+    void reserve(size_t n);
+
+    /* append new value to data tables
+     * caller must initialize IndexValue inside
+     * the callback function ivInitFunc */
+    template <typename IvInitFunc>
+    void appendIndexValue(IvInitFunc&& ivInitFunc)
+    {
+        static_assert(std::is_invocable_v<IvInitFunc, IndexValue*>,
+                "callback function must of type void(*)(IndexValue*)");
+
+        valList_.push_back(new IndexValue);
+        ivInitFunc(valList_.back());
+
+        insertValueToTables(valList_.back());
+    }
+
+    inline void insertValueToTables(IndexValue* iv)
+    {
+        // TODO: implement construction of other hash tables
+        for (auto& [kt, table] : indexTables_) {
+            switch (kt)
+            {
+                case PID:
+                    table[iv->pid] = iv;
+                    break;
+                case AID:
+                    table[iv->aid] = iv;
+                    break;
+                default:
+                    PERROR("the key type is not supported yet!");
+            }
+        }
+    }
+
+    void readFromFile(const char* filename) final;
+
+    void writeToFile(const char* filename) final;
+};
+
 
 /* stores pointer, user of this struct
- * must not deallocate DataRecordFile before reading */
+ * must NOT deallocate DataRecordFile before reading */
 struct DataRecordEntry {
+    /* total size of this record */
     uint32_t    size;
+    /* size of each string field */
     uint32_t    ts, as, cs, ds;
+    /* not these strings are NOT null-terminated
+     * their sizes are indicated by ts, as, cs, ds */
     char*       title;
     char*       abstract;
     char*       claim;
@@ -234,7 +342,7 @@ struct DataRecordEntry {
 
 /* storing of Data Record File in memory
  * in charge of writing/reading file to/from disk */
-class DataRecordFile {
+class DataRecordFile : public FileReadWritable {
     inline static constexpr uint32_t MAX_FILE_SIZE = 1 << 30;   // 1 GB file size limit
 
     char* buf_;
@@ -243,32 +351,49 @@ class DataRecordFile {
     uint32_t nBytesWritten_;
     uint32_t nRecordsWritten_;
 
+    inline void incrementBy(uint32_t size)
+    {
+        curBuf_ += size;
+        nBytesWritten_ += size;
+    }
+
 public:
 
     DataRecordFile() : buf_(new char[MAX_FILE_SIZE])
     {
-        reset();
+        clear();
     }
 
-    ~DataRecordFile()
+    ~DataRecordFile() final
     {
         delete[] buf_;
     }
 
+    /* total bytes allocated */
     inline uint32_t capacity() const { return MAX_FILE_SIZE; }
 
+    /* total bytes of data written to the buffer */
     inline uint32_t bytesWritten() const { return nBytesWritten_; }
 
+    /* current number of records in the buffer */
     inline uint32_t numRecords() const { return nRecordsWritten_; }
 
-    void reset();
+    /* clearing buffer of data and reset other fields */
+    void clear();
 
-    void writeToFile(const char* filename);
+    /* write buffer to file */
+    void writeToFile(const char* filename) final;
 
-    void readFromFile(const char* filename);
+    /* read buffer from file */
+    void readFromFile(const char* filename) final;
 
-    bool appendRecord(uint32_t recordSize, const std::vector<std::string>& formattedText);
+    /* appends a record into buffer
+     * returns false if new record is too large for the buffer
+     * true if append succeeds */
+    bool appendRecord(const std::vector<std::string>& formattedText, uint32_t recordSize = 0);
 
+    /* returns a DataRecordEntry pointing at the offset
+     * caller is responsible for the correctness of the offset */
     DataRecordEntry GetRecordAtOffset(uint32_t offset);
 };
 
