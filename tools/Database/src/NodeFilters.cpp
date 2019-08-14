@@ -33,3 +33,13 @@ std::string ClaimNodeFilter::operator()(pugi::xml_node& node)
 }
 
 */
+std::string UsClassificationNodeFilter::operator()(pugi::xml_node &node)
+{
+    return std::__cxx11::string();
+}
+
+bool UsClassificationWalker::for_each(pugi::xml_node& node)
+{
+
+    return true;
+}

@@ -48,6 +48,23 @@ using IdNodeFilter = TagNodeWalkerFilter<IdNodeWalker>;
 using ClaimNodeWalker = ExhaustiveChildWalker;
 
 using ClaimNodeFilter = TagNodeWalkerFilter<ClaimNodeWalker>;
+
+
+class UsClassificationWalker : public pugi::xml_tree_walker {
+    std::string innerText_;
+public:
+    bool for_each(pugi::xml_node& node) override;
+    std::string getInnerText() const { return innerText_; }
+    void reset() { innerText_.clear(); }
+};
+
+
+class UsClassificationNodeFilter : public TagNodeFilter {
+public:
+    std::string operator()(pugi::xml_node& node) final;
+    DEFINE_DEFAULT_CLONE(UsClassificationNodeFilter);
+};
+
 /*
 class ClaimNodeFilter : public TagNodeFilter {
     ClaimNodeWalker walker_;

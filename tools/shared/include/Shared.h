@@ -7,20 +7,31 @@
 #define TOOLS_SHARED_H
 
 #include "Utility.h"
-#include "ConcurrentQueue.h"
 #include "MetaFunctionHelpers.h"
+
+#include "ConcurrentQueue.h"
+#include "ThreadJob.h"
+#include "ThreadModelInterface.h"
+#include "ThreadPool.h"
+#include "StatsThread.h"
+
 #include "FunctorDict.h"
 #include "FormatFunctors.h"
 #include "TagNodeFilterFunctors.h"
-#include "ThreadJob.h"
-#include "ThreadPool.h"
-#include "StatsThread.h"
+
 #include "XmlPCProcessorInterface.h"
 #include "XmlTagTextWalker.h"
-#include "XmlFileReader.h"
+#include "XmlPathFileReader.h"
 #include "XmlInfoWriter.h"
 #include "PatentTagTextCollector.h"
 #include "TagConstants.h"
 #include "XmlPCProcessorTester.h"
+
+#include "XmlIPOInterface.h"
+#include "XmlReaderThread.h"
+#include "XmlTagTextPrinterProcessorThread.h"
+#include "XmlTagTextPrinterWriterThread.h"
+
+#include "XmlIPOTagTextPrinterTester.h"
 
 #endif //TOOLS_SHARED_H

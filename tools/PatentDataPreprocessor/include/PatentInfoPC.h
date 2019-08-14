@@ -13,7 +13,7 @@
 #include <StatsThread.h>
 
 #include "ConcurrentQueue.h"
-#include "XmlFileReader.h"
+#include "XmlPathFileReader.h"
 
 
 class PatentInfoPC : public PCThreadPool<> {
@@ -21,7 +21,7 @@ class PatentInfoPC : public PCThreadPool<> {
     ConcurrentQueue<std::string> outputInfoQueue_;
     ConcurrentQueue<std::string> splitAbstractQueue_;
 
-    XmlFileReader xmlFileReader_;
+    XmlPathFileReader xmlFileReader_;
     StatsThread<std::string, true>* statsThread_;
 
     std::string infoOutputFilename_;

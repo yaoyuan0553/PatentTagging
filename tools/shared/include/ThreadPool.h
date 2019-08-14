@@ -64,6 +64,25 @@ public:
         push_back(new ThreadInterfaceSubclass(std::forward<Args>(args)...));
     }
 
+    template <int N, class ThreadInterfaceSubclass, typename... Args>
+    void add(Args&&... args)
+    {
+        static_assert(std::is_base_of_v<ThreadInterface, ThreadInterfaceSubclass>,
+                      "First argument of the template must be a subclass of ThreadInterface");
+        for (int i = 0; i < N; i++)
+            add<ThreadInterfaceSubclass, Args...>(std::forward<Args>(args)...);
+//            push_back(new ThreadInterfaceSubclass(std::forward<Args>(args)...));
+    }
+    template <class ThreadInterfaceSubclass, typename... Args>
+    void add(int N, Args&&... args)
+    {
+        static_assert(std::is_base_of_v<ThreadInterface, ThreadInterfaceSubclass>,
+                      "First argument of the template must be a subclass of ThreadInterface");
+        for (int i = 0; i < N; i++)
+            add<ThreadInterfaceSubclass, Args...>(std::forward<Args>(args)...);
+//        push_back(new ThreadInterfaceSubclass(std::forward<Args>(args)...));
+    }
+
     void runAll() override
     {
         for (ThreadInterface* t : *this)

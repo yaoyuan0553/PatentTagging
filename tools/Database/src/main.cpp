@@ -256,7 +256,7 @@ class GenerateDatabase : public XmlPCProcessorInterface {
 
     void initializeData() final
     {
-        XmlFileReader xmlFileReader(pathFilename_, filenameQueue_);
+        XmlPathFileReader xmlFileReader(pathFilename_, filenameQueue_);
         xmlFileReader.runOnMain();
 
         outputQueueByFile_.emplace(piecewise_construct, make_tuple(outputFilename_), make_tuple());
@@ -448,6 +448,27 @@ class TagTester : public XmlPCProcessorTester {
     {
         tagNodeFilterDict_.add<IdNodeFilter>(tags::publication_reference);
         tagNodeFilterDict_.add<IdNodeFilter>(tags::application_reference);
+//        tagNodeFilterDict_.add<AbstractGreedyNodeFilter>(tags::abstract);
+//        tagNodeFilterDict_.add<ClaimNodeFilter>(tags::claim);
+    }
+
+    void prepareOutputFormatters() final
+    {
+//        tagTextOutputFormatterDict_.add<AbstractDataFormatter>(tags::abstract);
+//        tagTextOutputFormatterDict_.add<ClaimDataFormatter>(tags::claim);
+    }
+
+public:
+    TagTester(string_view pathFilename, string_view outputFilename,
+            int nProducers) : XmlPCProcessorTester(pathFilename, outputFilename, nProducers)
+    { }
+};
+
+class IPOTagTester : public XmlIPOTagTextPrinterTester {
+    void prepareNodeFilters() final
+    {
+        tagNodeFilterDict_.add<IdNodeFilter>(tags::publication_reference);
+        tagNodeFilterDict_.add<IdNodeFilter>(tags::application_reference);
         tagNodeFilterDict_.add<AbstractGreedyNodeFilter>(tags::abstract);
         tagNodeFilterDict_.add<ClaimNodeFilter>(tags::claim);
     }
@@ -457,13 +478,15 @@ class TagTester : public XmlPCProcessorTester {
         tagTextOutputFormatterDict_.add<AbstractDataFormatter>(tags::abstract);
         tagTextOutputFormatterDict_.add<ClaimDataFormatter>(tags::claim);
     }
-
 public:
-    TagTester(string_view pathFilename, string_view outputFilename,
-            int nProducers) : XmlPCProcessorTester(pathFilename, outputFilename, nProducers)
-    { }
+    IPOTagTester(string_view pathFilename, string_view outputFilename,
+            int nReaders, int nProcessors) :
+            XmlIPOTagTextPrinterTester(pathFilename, outputFilename, nReaders, nProcessors) { }
 };
 
+#define MODEL3
+
+#if defined(MODEL2)
 struct Usage {
     static constexpr int ARGC = 4;
     static void printAndExit(const char* program)
@@ -472,6 +495,7 @@ struct Usage {
         exit(-1);
     }
 };
+
 
 int main(int argc, char* argv[])
 {
@@ -484,3 +508,30 @@ int main(int argc, char* argv[])
 
     return 0;
 }
+
+#elif defined(MODEL3)
+struct Usage {
+    static constexpr int ARGC = 5;
+    static void printAndExit(const char* program)
+    {
+        printf("Usage:\n\t%s <path-file> <output-file> <n-readers> <n-workers>\n", program);
+        exit(-1);
+    }
+};
+
+
+int main(int argc, char* argv[])
+{
+    if (argc != Usage::ARGC)
+        Usage::printAndExit(argv[0]);
+
+    IPOTagTester tagTester(argv[1], argv[2], atoi(argv[3]), atoi(argv[4]));
+
+    tagTester.process();
+
+    return 0;
+}
+
+#endif
+
+

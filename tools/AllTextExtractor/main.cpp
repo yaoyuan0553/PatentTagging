@@ -8,7 +8,7 @@
 #include <pugixml.hpp>
 
 #include "XmlPCProcessorInterface.h"
-#include "XmlFileReader.h"
+#include "XmlPathFileReader.h"
 #include "PatentTagTextCollector.h"
 #include "StatsThread.h"
 #include "TagNodeFilterFunctors.h"
@@ -82,7 +82,7 @@ class AllTextExtractor : public XmlPCProcessorInterface {
 
     void initializeData() final
     {
-        XmlFileReader xmlFileReader(pathFilename_, filenameQueue_);
+        XmlPathFileReader xmlFileReader(pathFilename_, filenameQueue_);
         xmlFileReader.runOnMain();
 
         outputQueueByFile_.emplace(piecewise_construct, make_tuple(outputFilename_), make_tuple());

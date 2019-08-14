@@ -10,7 +10,7 @@
 #include "XmlPCProcessorInterface.h"
 #include "PatentTagTextCollector.h"
 #include "StatsThread.h"
-#include "XmlFileReader.h"
+#include "XmlPathFileReader.h"
 #include "XmlInfoWriter.h"
 
 
@@ -56,8 +56,8 @@ protected:
 
     void initializeData() final
     {
-        XmlFileReader xmlFileReader(pathFilename_, filenameQueue_);
-        xmlFileReader.runOnMain();
+        XmlPathFileReader xmlPathFileReader(pathFilename_, filenameQueue_);
+        xmlPathFileReader.runOnMain();
     }
 
     void initializeThreads() final

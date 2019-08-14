@@ -9,7 +9,7 @@ set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 
-add_library(XmlSharedTools STATIC src/PatentTagTextCollector.cpp src/XmlFileReader.cpp src/XmlTagTextWalker.cpp src/FormatFunctors.cpp src/TagNodeFilterFunctors.cpp src/XmlInfoWriter.cpp src/XmlPCProcessorTester.cpp)
+add_library(XmlSharedTools STATIC src/PatentTagTextCollector.cpp src/XmlPathFileReader.cpp src/XmlTagTextWalker.cpp src/FormatFunctors.cpp src/TagNodeFilterFunctors.cpp src/XmlInfoWriter.cpp src/XmlPCProcessorTester.cpp include/XmlIPOInterface.h src/XmlIPOTagTextPrinterTester.cpp include/XmlIPOTagTextPrinterTester.h src/XmlTagTextPrinterProcessorThread.cpp include/XmlTagTextPrinterProcessorThread.h src/XmlReaderThread.cpp include/XmlReaderThread.h src/XmlTagTextPrinterWriterThread.cpp include/XmlTagTextPrinterWriterThread.h src/XmlIOReaderThread.cpp include/XmlIOReaderThread.h)
 
 target_include_directories(XmlSharedTools PRIVATE
         ${CMAKE_SOURCE_DIR}/cpptqdm

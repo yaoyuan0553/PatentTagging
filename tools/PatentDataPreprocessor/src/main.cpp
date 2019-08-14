@@ -9,7 +9,7 @@
 #include "ThreadPool.h"
 
 #include "StatsThread.h"
-#include "XmlFileReader.h"
+#include "XmlPathFileReader.h"
 #include "PatentInfoCollector.h"
 #include "XmlInfoWriter.h"
 #include "PatentInfoPC.h"
@@ -51,7 +51,7 @@ void start(int argc, char* argv[])
     unordered_map<string, CQueue<string>> outputQueueByFile;
 
     /* collect file paths */
-    XmlFileReader xmlFileReader(argv[1], filenameQueue);
+    XmlPathFileReader xmlFileReader(argv[1], filenameQueue);
     xmlFileReader.runOnMain();
 
     /* construct outputQueues in-place */

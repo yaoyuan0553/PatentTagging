@@ -14,7 +14,7 @@
 #include "ThreadJob.h"
 
 
-class XmlFileReader : public ThreadJob<> {
+class XmlPathFileReader : public ThreadJob<> {
     int batchSize_;
     std::string pathFilename_;
 
@@ -23,7 +23,7 @@ class XmlFileReader : public ThreadJob<> {
     void internalRun() override;
 
 public:
-    XmlFileReader(std::string pathFilename, ConcurrentQueue<std::string>& filenameQueue,
+    XmlPathFileReader(std::string pathFilename, ConcurrentQueue<std::string>& filenameQueue,
             int batchSize = 128):
             batchSize_(batchSize), pathFilename_(std::move(pathFilename)),
             filenameQueue_(filenameQueue) { }
