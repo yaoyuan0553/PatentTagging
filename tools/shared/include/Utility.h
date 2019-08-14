@@ -16,6 +16,16 @@
 #include <regex>
 
 
+
+#define PERROR(x...)                                                    \
+    do {                                                                \
+		fprintf(stderr, "[-] ERROR : " x);                              \
+		fprintf(stderr, "\n\tLocation : %s(), %s:%u\n", __FUNCTION__,   \
+			__FILE__, __LINE__);                                        \
+        exit(-1);                                                       \
+    } while (0)
+
+
 /* replace multiple occurrences of the oldDelimiter (2nd template argument)
  * with a single newDelimiter (1st template argument)
  * the default oldDelimiter is a space character ' ' */

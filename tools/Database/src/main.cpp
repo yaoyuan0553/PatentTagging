@@ -15,6 +15,8 @@
 using namespace std;
 namespace fs = std::filesystem;
 
+#define DEBUG 1
+
 
 /* takes output data and write to disk every n GB */
 /*
@@ -73,7 +75,6 @@ class PatentTagInfoStructCollector : ThreadJob<> {
     /* WARNING: reader must release memory */
     CQueue<DataRecord*>& outputQueue_;
 
-    DatabaseOutputFormatterDict databaseOutputFormatterDict;
 
     const int batchSize_;
 
@@ -95,11 +96,8 @@ class PatentTagInfoStructCollector : ThreadJob<> {
             walker_.reset();
             doc.traverse(walker_);
 
-            /* WARNING: to be released by caller */
-            auto* singleOutput = new DataRecord;
+            DataRecord* singleOutput = walker_.getTagTexts();
             try {
-                for (const auto& [tag, textVec] : *walker_.getTagTexts())
-                    (*singleOutput)[tag] = databaseOutputFormatterDict[tag](textVec);
                 batchOutput.push_back(singleOutput);
             }
             catch (range_error& e) {
@@ -107,8 +105,6 @@ class PatentTagInfoStructCollector : ThreadJob<> {
                 cerr << "[" << filename << "]\n";
                 continue;
             }
-
-            delete walker_.getTagTexts();
 
             if (++bN % batchSize_ == 0)
                 addBatchToQueue(batchOutput);
@@ -135,43 +131,110 @@ public:
 
 struct OutputFileCollection {
     DataRecord dataRecord;
-    
+
 };
 
 
 class DatabaseFileWriter : public ThreadJob<CQueue<DataRecord*>&> {
     inline static constexpr char DEFAULT_FILE_PREFIX[] = "patent-data";
+    inline static constexpr int RECORDS_PER_FILE = 20000;
+    inline static constexpr uint32_t MAX_FILE_SIZE = 1 << 30;   // 1 GB file size limit
 
     fs::path rootDir_;
     const int recordsPerFile_;
 
-    fs::path filename_ = DEFAULT_FILE_PREFIX;
-    int fileNo = 0;
+    fs::path binFilename_ = DEFAULT_FILE_PREFIX;
+    int binNo_ = 0;
 
-    unordered_map<string, string> fileBuffer_;
+    /* two kinds of entry (pid & aid) to find index entries */
+    IndexTable pidIndexTable_, aidIndexTable_;
+    /* where real index value stores memory released on class
+     * destruction */
+    vector<IndexValue*> indexValueList;
 
     vector<string> tagsToWrite_;
 
+    /* for formatting tag text writing to the data file */
+    DatabaseOutputFormatterDict databaseOutputFormatterDict_;
+
+    /* data file buffer */
+    DataRecordFile dataRecordFile_;
+    uint32_t nRecords = 0;
+
+    bool threadRan = false;
+
     void internalRun(CQueue<DataRecord*>& outputQueue) final
     {
-        for (int i = 0;;)
+        for (;;)
         {
             auto [record, quit] = outputQueue.pop();
 
             if (quit) break;
 
-            for (const string& tag : tagsToWrite_) {
+            appendToIndexTable(record);
+            appendToDataRecordFile(record);
 
-                fileBuffer_[tag] += (*record)[tag];
+            // release memory of DataRecord
+            delete record;
+        }
+        threadRan = true;
+    }
+
+
+    void appendToIndexTable(DataRecord* record)
+    {
+        indexValueList.push_back(new IndexValue);
+
+        indexValueList.back()->pid = record->at(tags::publication_reference)[0];
+        indexValueList.back()->aid = record->at(tags::application_reference)[0];
+//         TODO: appDate
+//        indexValueList.back()->appDate = record->()
+        indexValueList.back()->binId = binNo_;
+        indexValueList.back()->ipcList = record->at(tags::classification);
+        // TODO: ti, ai, ci, di, offset
+    }
+
+    void appendToDataRecordFile(DataRecord* record)
+    {
+        uint32_t recordSize = sizeof(uint32_t) + sizeof(uint32_t) * tagsToWrite_.size();
+        vector<string> tagFormattedText;
+        tagFormattedText.reserve(tagsToWrite_.size());
+        for (const auto& tag : tagsToWrite_) {
+            tagFormattedText.push_back(databaseOutputFormatterDict_[tag](record->at(tag)));
+            recordSize += tagFormattedText.back().length();
+        }
+        if (!dataRecordFile_.appendRecord(recordSize, tagFormattedText)) {
+            fs::path binFilename = rootDir_ / binFilename_;
+            binFilename += to_string(binNo_) + ".bin";
+#ifdef DEBUG
+            cout << binFilename << '\n';
+#endif
+            // synchronized version. in async, there should be multiple DataRecordFile
+            // to avoid clearing buffer before I/O finishes
+            dataRecordFile_.writeToFile(binFilename.c_str());
+            dataRecordFile_.reset();
+            binNo_++;
+            if (!dataRecordFile_.appendRecord(recordSize, tagFormattedText)) {
+                fprintf(stderr, "%s: something is wrong here %d\n", __FUNCTION__, __LINE__);
+                exit(-1);
             }
         }
+        nRecords++;
     }
 
 public:
     DatabaseFileWriter(const fs::path& rootDir, CQueue<DataRecord*>& outputQueue,
-            const vector<string>& tagsToWrite, const int recordsPerFile = 20000) :
+            const vector<string>& tagsToWrite, const int recordsPerFile = RECORDS_PER_FILE) :
         ThreadJob(outputQueue), rootDir_(rootDir), recordsPerFile_(recordsPerFile),
         tagsToWrite_(tagsToWrite) { }
+
+    ~DatabaseFileWriter() final
+    {
+        if (threadRan) {
+            for (IndexValue* iv : indexValueList)
+                delete iv;
+        }
+    }
 };
 
 
@@ -236,44 +299,13 @@ public:
     { nProducers_ = nProducers; }
 };
 
-void testDataType()
-{
-    cout << sizeof(IndexValue) << endl;
-    cout << IndexValue::INDEX_VALUE_STATIC_SIZE << endl;
 
-    IndexValue idxVal1;
-    idxVal1.datId = 32;
-    strcpy(idxVal1.publicationId, "US20140026733A1-20140130");
-    strcpy(idxVal1.applicationId, "US13945385-20130718");
-    idxVal1.ti = 0; idxVal1.ai = 0; idxVal1.ci = 0; idxVal1.di = 0;
-    idxVal1.classCount = 2;
 
-    ClassificationString c1, c2;
-    strcpy(c1.data(), "B01F-3/04-(2006.01)");
-    strcpy(c2.data(), "C02F-1/44-(2006.01)");
-    idxVal1.classifications().push_back(c1);
-    idxVal1.classifications().push_back(c2);
-
-    cout << idxVal1.getTotalBytes() << endl;
-
-    char* buffer = new char[200];
-
-    int sizeWritten = 0;
-    if (!idxVal1.save(buffer, 200, &sizeWritten))
-        cout << "what\n";
-
-    IndexValue idxVal2;
-    idxVal2.load(buffer);
-
-    printf("what\n");
-
-    delete[] buffer;
-}
 
 
 int main()
 {
-    testDataType();
+
 
     return 0;
 }

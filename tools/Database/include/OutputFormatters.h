@@ -12,16 +12,24 @@
 #include <Utility.h>
 #include <FunctorDict.h>
 
+#include "DataTypes.h"
+
+
+constexpr char APP_DATE[] = "";
+
+
 struct DatabaseOutputFormatter : public Cloneable {
     virtual std::string operator()(const std::vector<std::string>& texts) = 0;
+
     DECLARE_ABSTRACT_CLONE(DatabaseOutputFormatter);
+
+    virtual ~DatabaseOutputFormatter() = 0;
 };
 
 
+using DatabaseOutputFormatterDict = FunctorDict<
+        DatabaseOutputFormatter, std::string, const std::vector<std::string>&>;
 
-
-
-using DatabaseOutputFormatterDict = FunctorDict<DatabaseOutputFormatter, std::string, const std::vector<std::string>&>;
 
 
 #endif //TOOLS_OUTPUTFORMATTERS_H
