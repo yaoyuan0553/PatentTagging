@@ -20,7 +20,7 @@ namespace tags
 
     constexpr char invention_title[] = "invention-title";
     constexpr char description[] = "description";
-    constexpr char claims[] = "claims";
+    constexpr char claim[] = "claim";
     constexpr char date[] = "date";
 
     constexpr char publication_reference[] = "publication-reference";

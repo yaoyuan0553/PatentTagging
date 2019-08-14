@@ -2,12 +2,12 @@
 // Created by yuan on 7/24/19.
 //
 
-#include "PatentInfoWriter.h"
+#include "XmlInfoWriter.h"
 
 #include <iostream>
 
 
-void PatentInfoWriter::internalRun(ConcurrentQueue<std::string> &outputInfoQueue)
+void XmlInfoWriter::internalRun(ConcurrentQueue<std::string> &outputInfoQueue)
 {
     using namespace std;
 
@@ -26,7 +26,7 @@ void PatentInfoWriter::internalRun(ConcurrentQueue<std::string> &outputInfoQueue
         outputFile << info;
     }
 
-    cout << "PatentInfoWriter thread finished\n";
+    cout << "XmlInfoWriter thread finished\n";
 
     outputFile.close();
 }

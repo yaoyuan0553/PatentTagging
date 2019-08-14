@@ -27,8 +27,8 @@ class CombineOutputWriter : public ThreadJob<> {
 
 class XmlTagTextPtrWalker : public pugi::xml_tree_walker {
 
-    /* WARNING: memory released by caller */
     TagTextDict emptyTagTextDict_;
+    /* WARNING: memory released by caller */
     TagTextDict* tagTextDict_;
     TagNodeFilterDict tagNodeFilterDict_;
 
@@ -443,9 +443,44 @@ void testIndexTable()
     getchar();
 }
 
-int main()
+class TagTester : public XmlPCProcessorTester {
+    void prepareNodeFilters() final
+    {
+        tagNodeFilterDict_.add<IdNodeFilter>(tags::publication_reference);
+        tagNodeFilterDict_.add<IdNodeFilter>(tags::application_reference);
+        tagNodeFilterDict_.add<AbstractGreedyNodeFilter>(tags::abstract);
+        tagNodeFilterDict_.add<ClaimNodeFilter>(tags::claim);
+    }
+
+    void prepareOutputFormatters() final
+    {
+        tagTextOutputFormatterDict_.add<AbstractDataFormatter>(tags::abstract);
+        tagTextOutputFormatterDict_.add<ClaimDataFormatter>(tags::claim);
+    }
+
+public:
+    TagTester(string_view pathFilename, string_view outputFilename,
+            int nProducers) : XmlPCProcessorTester(pathFilename, outputFilename, nProducers)
+    { }
+};
+
+struct Usage {
+    static constexpr int ARGC = 4;
+    static void printAndExit(const char* program)
+    {
+        printf("Usage:\n\t%s <path-file> <output-file> <n-workers>\n", program);
+        exit(-1);
+    }
+};
+
+int main(int argc, char* argv[])
 {
-    testIndexTable();
+    if (argc != Usage::ARGC)
+        Usage::printAndExit(argv[0]);
+
+    TagTester tagTester(argv[1], argv[2], atoi(argv[3]));
+
+    tagTester.process();
 
     return 0;
 }

@@ -18,8 +18,9 @@
 #include "XmlPCProcessorInterface.h"
 #include "XmlTagTextWalker.h"
 #include "XmlFileReader.h"
-#include "PatentInfoWriter.h"
+#include "XmlInfoWriter.h"
 #include "PatentTagTextCollector.h"
 #include "TagConstants.h"
+#include "XmlPCProcessorTester.h"
 
 #endif //TOOLS_SHARED_H

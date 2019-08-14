@@ -11,7 +11,7 @@
 #include "StatsThread.h"
 #include "XmlFileReader.h"
 #include "PatentInfoCollector.h"
-#include "PatentInfoWriter.h"
+#include "XmlInfoWriter.h"
 #include "PatentInfoPC.h"
 
 #include "FormatFunctors.h"
@@ -64,7 +64,7 @@ void start(int argc, char* argv[])
                 tagTextOutputFormatterDict, tagNodeFilterDict);
 
     for (auto& [filename, outputQueue] : outputQueueByFile)
-        consumers.add<PatentInfoWriter>(filename, outputQueue);
+        consumers.add<XmlInfoWriter>(filename, outputQueue);
 
     StatsThread<string, true> writeStats(outputQueueByFile[argv[2]], filenameQueue.totalPushedItems());
 

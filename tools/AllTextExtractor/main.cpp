@@ -12,7 +12,7 @@
 #include "PatentTagTextCollector.h"
 #include "StatsThread.h"
 #include "TagNodeFilterFunctors.h"
-#include "PatentInfoWriter.h"
+#include "XmlInfoWriter.h"
 
 
 using namespace std;
@@ -94,7 +94,7 @@ class AllTextExtractor : public XmlPCProcessorInterface {
             producers_.add<PatentTagTextCollector>(filenameQueue_, outputQueueByFile_,
                                                    tagTextOutputFormatterDict_, tagNodeFilterDict_, 256);
         for (auto& [filename, outputQueue] : outputQueueByFile_)
-            consumers_.add<PatentInfoWriter>(filename, outputQueue);
+            consumers_.add<XmlInfoWriter>(filename, outputQueue);
 
     }
 

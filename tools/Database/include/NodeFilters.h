@@ -18,14 +18,45 @@ public:
 };
 
 
-class IdNodeFilter : public TagNodeFilter {
-    IdNodeWalker walker_;
+template <typename Walker>
+class TagNodeWalkerFilter : public TagNodeFilter {
+    static_assert(std::is_base_of_v<pugi::xml_tree_walker, Walker>,
+            "Walker must of subclass of pugi::xml_tree_walker");
+    Walker walker_;
 public:
-
     std::string operator()(pugi::xml_node& node) override;
 
-    DEFINE_DEFAULT_CLONE(IdNodeFilter);
+    DEFINE_DEFAULT_CLONE(TagNodeWalkerFilter);
+
+    ~TagNodeWalkerFilter() override = default;
 };
+
+template <typename Walker>
+std::string TagNodeWalkerFilter<Walker>::operator()(pugi::xml_node& node)
+{
+    node.traverse(walker_);
+
+    std::string content = walker_.getInnerText();
+
+    walker_.reset();
+
+    return content;
+}
+
+using IdNodeFilter = TagNodeWalkerFilter<IdNodeWalker>;
+
+using ClaimNodeWalker = ExhaustiveChildWalker;
+
+using ClaimNodeFilter = TagNodeWalkerFilter<ClaimNodeWalker>;
+/*
+class ClaimNodeFilter : public TagNodeFilter {
+    ClaimNodeWalker walker_;
+public:
+    std::string operator()(pugi::xml_node& node) override;
+
+    DEFINE_DEFAULT_CLONE(ClaimNodeFilter);
+};
+*/
 
 
 #endif //TOOLS_NODEFILTERS_H

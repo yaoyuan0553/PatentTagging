@@ -20,7 +20,8 @@ bool IdNodeWalker::for_each(pugi::xml_node& node)
     return true;
 }
 
-std::string IdNodeFilter::operator()(pugi::xml_node& node)
+/*
+std::string ClaimNodeFilter::operator()(pugi::xml_node& node)
 {
     node.traverse(walker_);
 
@@ -31,3 +32,4 @@ std::string IdNodeFilter::operator()(pugi::xml_node& node)
     return content;
 }
 
+*/
