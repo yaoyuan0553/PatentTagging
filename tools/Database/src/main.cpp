@@ -486,7 +486,7 @@ public:
             XmlIPOTagTextPrinterTester(pathFilename, outputFilename, nReaders, nProcessors) { }
 };
 
-class XpathIPOTagTester : public XmlXpathIPOTagTextPrinterTester {
+class XpathIPOTagTester : public XmlBufferXpathIPOTagTextPrinterTester {
     void initializeQuery() final
     {
 //        xpathQueryTextFormatterDict_.add<XpathSingleQueryGreedyNoExtraSpaceInnerText>(
@@ -512,22 +512,22 @@ class XpathIPOTagTester : public XmlXpathIPOTagTextPrinterTester {
                 vector<XpathQueryString>{".//date"}
         );
 
-        xpathQueryTextFormatterDict_.add<XpathAbstractQuery>(
-                "abstract", "//abstract"
-        );
-
-        xpathQueryTextFormatterDict_.add<XpathClaimQuery>(
-                "claim", "//claim"
-        );
-
-        xpathQueryTextFormatterDict_.add<XpathDescriptionQuery>(
-                "description", "//description"
-        );
+//        xpathQueryTextFormatterDict_.add<XpathAbstractQuery>(
+//                "abstract", "//abstract"
+//        );
+//
+//        xpathQueryTextFormatterDict_.add<XpathClaimQuery>(
+//                "claim", "//claim"
+//        );
+//
+//        xpathQueryTextFormatterDict_.add<XpathDescriptionQuery>(
+//                "description", "//description"
+//        );
     }
 public:
     XpathIPOTagTester(string_view pathFilename, string_view outputFilename,
             int nReaders, int nProcessors) :
-            XmlXpathIPOTagTextPrinterTester(pathFilename,
+            XmlBufferXpathIPOTagTextPrinterTester(pathFilename,
                     outputFilename, nReaders, nProcessors) { }
 };
 

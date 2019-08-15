@@ -48,5 +48,9 @@
 #include "XmlXpathIPOTagTextPrinterTester.h"
 
 
+#include "FileReaderThread.h"
+#include "XmlBufferTagTextPrinterProcessorThread.h"
+#include "XmlBufferXpathIPOTagTextPrinterTester.h"
+
 
 #endif //TOOLS_SHARED_H

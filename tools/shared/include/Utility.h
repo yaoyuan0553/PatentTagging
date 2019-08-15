@@ -15,6 +15,8 @@
 #include <algorithm>
 #include <regex>
 
+#include <sys/stat.h>
+
 
 
 #define PERROR(x...)                                                    \
@@ -134,6 +136,17 @@ public:
         return operator()(str, length);
     }
 };
+
+/* retrieve file size without opening file */
+inline size_t GetFileSize(const char* filename)
+{
+    struct stat st;
+    if (stat(filename, &st) == 0)
+        return st.st_size;
+
+    fprintf(stderr, "GetFileSize() failed for file [%s]\n", filename);
+    PERROR("stat");
+}
 
 
 /* Cloneable Macros to shorten repetitive code */
