@@ -13,6 +13,7 @@
 class XpathQueryString : public std::string {
 public:
     XpathQueryString(const std::string& str) : std::string(str) { }
+    XpathQueryString(const char* str) : std::string(str) { }
 
     static XpathQueryString Union(const XpathQueryString& xqs1,
             const XpathQueryString& xqs2)

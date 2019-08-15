@@ -27,7 +27,9 @@
 #include "TagConstants.h"
 #include "XmlPCProcessorTester.h"
 
-#include "XmlIPOInterface.h"
+#include "XmlFilterOutputIPOInterface.h"
+#include "XmlXpathIPOInterface.h"
+
 #include "XmlReaderThread.h"
 #include "XmlTagTextPrinterProcessorThread.h"
 #include "XmlTagTextPrinterWriterThread.h"
@@ -37,5 +39,8 @@
 #include "XpathQuery.h"
 #include "XpathQueryString.h"
 #include "XpathQueryTextFormatter.h"
+
+#include "XmlTagTextPrinterProcessorXpathThread.h"
+#include "XmlXpathIPOTagTextPrinterTester.h"
 
 #endif //TOOLS_SHARED_H

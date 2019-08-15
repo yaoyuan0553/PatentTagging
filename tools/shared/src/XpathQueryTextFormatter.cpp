@@ -10,19 +10,19 @@
 using namespace std;
 
 
-std::string XpathSingleQueryDefaultInnerText::operator()(pugi::xml_document* doc)
+std::string XpathSingleQueryDefaultInnerText::operator()(pugi::xml_node& root)
 {
-    pugi::xml_node resNode = doc->select_node(query_.pugiQuery()).node();
+    pugi::xml_node resNode = root.select_node(query_.pugiQuery()).node();
 
-    printf("%s: %s\n", resNode.name(), resNode.text().get());
+//    printf("%s: %s\n", resNode.name(), resNode.text().get());
 
     return resNode.text().get();
 }
 
 
-std::string XpathSingleQueryGreedyInnerText::operator()(pugi::xml_document* doc)
+std::string XpathSingleQueryGreedyInnerText::operator()(pugi::xml_node& root)
 {
-    pugi::xml_node resNode = doc->select_node(query_.pugiQuery()).node();
+    pugi::xml_node resNode = root.select_node(query_.pugiQuery()).node();
 
     walker_.reset();
 
@@ -31,7 +31,7 @@ std::string XpathSingleQueryGreedyInnerText::operator()(pugi::xml_document* doc)
     return walker_.getInnerText();
 }
 
-std::string XpathSingleQueryGreedyNoExtraSpaceInnerText::operator()(pugi::xml_document* doc)
+std::string XpathSingleQueryGreedyNoExtraSpaceInnerText::operator()(pugi::xml_node& root)
 {
-    return RemoveExtraWhitespace(Base::operator()(doc));
+    return RemoveExtraWhitespace(Base::operator()(root));
 }

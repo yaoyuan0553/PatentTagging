@@ -1,21 +1,19 @@
 //
-// Created by yuan on 8/14/19.
+// Created by yuan on 8/15/19.
 //
 
 #pragma once
-#ifndef TOOLS_XMLIPOTAGTEXTPRINTERTESTER_H
-#define TOOLS_XMLIPOTAGTEXTPRINTERTESTER_H
+#ifndef TOOLS_XMLXPATHIPOTAGTEXTPRINTERTESTER_H
+#define TOOLS_XMLXPATHIPOTAGTEXTPRINTERTESTER_H
 
-#include "XmlFilterOutputIPOInterface.h"
-#include "XmlReaderThread.h"
-#include "XmlTagTextPrinterProcessorThread.h"
-#include "XmlTagTextPrinterWriterThread.h"
-#include "StatsThread.h"
+#include "XmlXpathIPOInterface.h"
 #include "XmlPathFileReader.h"
 #include "XmlIOReaderThread.h"
+#include "XmlTagTextPrinterWriterThread.h"
+#include "StatsThread.h"
+#include "XmlTagTextPrinterProcessorXpathThread.h"
 
-
-class XmlIPOTagTextPrinterTester : public XmlFilterOutputIPOInterface {
+class XmlXpathIPOTagTextPrinterTester : public XmlXpathIPOInterface {
 protected:
     std::string pathFilename_;
     std::string outputFilename_;
@@ -35,8 +33,8 @@ protected:
 //        for (int i = 0; i < nReaders_; i++)
         readerPool_.add<XmlIOReaderThread>(nReaders_, filenameQueue_, xmlDocQueue_, 128);
 
-        processorPool_.add<XmlTagTextPrinterProcessorThread>(nProcessors_, xmlDocQueue_,
-                outputStringQueue_, tagNodeFilterDict_, tagTextOutputFormatterDict_, 128);
+        processorPool_.add<XmlTagTextPrinterProcessorXpathThread>(nProcessors_, xmlDocQueue_,
+                outputStringQueue_, xpathQueryTextFormatterDict_, 128);
 
         writerPool_.add<XmlTagTextPrinterWriterThread>(outputFilename_, outputStringQueue_);
     }
@@ -44,7 +42,7 @@ protected:
     void executeThreads() final
     {
         StatsThread<std::string, true> processedStats(outputStringQueue_,
-                filenameQueue_.totalPushedItems());
+                                                      filenameQueue_.totalPushedItems());
 
         readerPool_.runAll();
         processorPool_.runAll();
@@ -61,11 +59,10 @@ protected:
         processedStats.wait();
     }
 
-    XmlIPOTagTextPrinterTester(std::string_view pathFilename,
+    XmlXpathIPOTagTextPrinterTester(std::string_view pathFilename,
             std::string_view outputFilename, int nReaders, int nProcessors) :
-            XmlFilterOutputIPOInterface(nReaders, nProcessors),
+            XmlXpathIPOInterface(nReaders, nProcessors),
             pathFilename_(pathFilename), outputFilename_(outputFilename) { }
 };
 
-
-#endif //TOOLS_XMLIPOTAGTEXTPRINTERTESTER_H
+#endif //TOOLS_XMLXPATHIPOTAGTEXTPRINTERTESTER_H

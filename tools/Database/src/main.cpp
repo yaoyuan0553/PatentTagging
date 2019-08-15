@@ -12,6 +12,8 @@
 #include "DataTypes.h"
 #include "OutputFormatters.h"
 
+#include "XpathQueryCollection.h"
+
 using namespace std;
 namespace fs = std::filesystem;
 
@@ -484,6 +486,51 @@ public:
             XmlIPOTagTextPrinterTester(pathFilename, outputFilename, nReaders, nProcessors) { }
 };
 
+class XpathIPOTagTester : public XmlXpathIPOTagTextPrinterTester {
+    void initializeQuery() final
+    {
+//        xpathQueryTextFormatterDict_.add<XpathSingleQueryGreedyNoExtraSpaceInnerText>(
+//                "claimText", XpathQueryString("//claim-text")
+//                );
+        xpathQueryTextFormatterDict_.add<XpathIdQuery>(
+                "pid", "//publication-reference",
+                vector<XpathQueryString>{".//country", ".//doc-number", ".//kind"}
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathIdQuery>(
+                "aid", "//application-reference",
+                vector<XpathQueryString>{".//country", ".//doc-number"}
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathDateQuery>(
+                "pubDate", "//publication-reference",
+                vector<XpathQueryString>{".//date"}
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathDateQuery>(
+                "appDate", "//application-reference",
+                vector<XpathQueryString>{".//date"}
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathAbstractQuery>(
+                "abstract", "//abstract"
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathClaimQuery>(
+                "claim", "//claim"
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathDescriptionQuery>(
+                "description", "//description"
+        );
+    }
+public:
+    XpathIPOTagTester(string_view pathFilename, string_view outputFilename,
+            int nReaders, int nProcessors) :
+            XmlXpathIPOTagTextPrinterTester(pathFilename,
+                    outputFilename, nReaders, nProcessors) { }
+};
+
 #define MODEL3
 
 #if defined(MODEL2)
@@ -525,7 +572,7 @@ int main(int argc, char* argv[])
     if (argc != Usage::ARGC)
         Usage::printAndExit(argv[0]);
 
-    IPOTagTester tagTester(argv[1], argv[2], atoi(argv[3]), atoi(argv[4]));
+    XpathIPOTagTester tagTester(argv[1], argv[2], atoi(argv[3]), atoi(argv[4]));
 
     tagTester.process();
 

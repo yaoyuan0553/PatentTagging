@@ -8,12 +8,12 @@ void XmlIOReaderThread::internalRun()
 {
     for (uint64_t bN = 0;;)
     {
-        // WARNING: memory must be released by caller
-        auto doc = new pugi::xml_document;
-
         auto [filename, quit] = inputData_.pop();
 
         if (quit) break;
+
+        // WARNING: memory must be released by caller
+        auto doc = new pugi::xml_document;
 
         if (!doc->load_file(filename.c_str())) {
             fprintf(stderr, "Load xml doc [%s] failed\n", filename.c_str());

@@ -14,13 +14,15 @@
 
 
 struct XpathQueryTextFormatter : public Cloneable {
-    virtual std::string operator()(pugi::xml_document* doc) = 0;
+    virtual std::string operator()(pugi::xml_node& root) = 0;
 
     DECLARE_ABSTRACT_CLONE(XpathQueryTextFormatter);
+
+    virtual ~XpathQueryTextFormatter() = default;
 };
 
 using XpathQueryTextFormatterDict = FunctorDict<XpathQueryTextFormatter,
-        std::string, pugi::xml_document*>;
+        std::string, pugi::xml_node&>;
 
 
 /* returns inner text of only the designated node */
@@ -28,7 +30,7 @@ class XpathSingleQueryDefaultInnerText : public XpathQueryTextFormatter {
 protected:
     XpathQuery query_;
 public:
-    std::string operator()(pugi::xml_document* doc) override;
+    std::string operator()(pugi::xml_node& root) override;
 
     DEFINE_DEFAULT_CLONE(XpathSingleQueryDefaultInnerText);
 
@@ -43,7 +45,7 @@ protected:
     ExhaustiveChildWalker walker_;
     XpathQuery query_;
 public:
-    std::string operator()(pugi::xml_document* doc) override;
+    std::string operator()(pugi::xml_node& root) override;
 
     DEFINE_DEFAULT_CLONE(XpathSingleQueryGreedyInnerText);
 
@@ -55,7 +57,7 @@ public:
 class XpathSingleQueryGreedyNoExtraSpaceInnerText : public XpathSingleQueryGreedyInnerText {
     using Base = XpathSingleQueryGreedyInnerText;
 public:
-    std::string operator()(pugi::xml_document* doc) override;
+    std::string operator()(pugi::xml_node& root) override;
 
     DEFINE_DEFAULT_CLONE(XpathSingleQueryGreedyNoExtraSpaceInnerText);
 
