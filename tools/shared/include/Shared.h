@@ -10,6 +10,10 @@
 #include "MetaFunctionHelpers.h"
 
 #include "ConcurrentQueue.h"
+#include "ConcurrentStaticQueue.h"
+
+#include "CQueue.h"
+
 #include "ThreadJob.h"
 #include "ThreadModelInterface.h"
 #include "ThreadPool.h"
@@ -42,5 +46,7 @@
 
 #include "XmlTagTextPrinterProcessorXpathThread.h"
 #include "XmlXpathIPOTagTextPrinterTester.h"
+
+
 
 #endif //TOOLS_SHARED_H

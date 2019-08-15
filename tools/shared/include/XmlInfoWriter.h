@@ -9,17 +9,17 @@
 #include <string>
 #include <fstream>
 
-#include <ConcurrentQueue.h>
+#include <CQueue.h>
 #include <ThreadJob.h>
 
 
-class XmlInfoWriter : public ThreadJob<ConcurrentQueue<std::string>&> {
+class XmlInfoWriter : public ThreadJob<CQueue<std::string>&> {
     std::string filename_;
 
-    void internalRun(ConcurrentQueue<std::string>& outputInfoQueue) override;
+    void internalRun(CQueue<std::string>& outputInfoQueue) override;
 
 public:
-    XmlInfoWriter(std::string_view filename, ConcurrentQueue<std::string>& outputInfoQueue) :
+    XmlInfoWriter(std::string_view filename, CQueue<std::string>& outputInfoQueue) :
         ThreadJob(outputInfoQueue), filename_(filename) { }
 };
 

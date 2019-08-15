@@ -126,9 +126,6 @@ public:
 };
 
 
-/* name alias for shortening class name */
-template <typename T, typename Container = std::deque<T>>
-using CQueue = ConcurrentQueue<T, Container>;
 
 
 #endif //TOOLS_CONCURRENTQUEUE_H

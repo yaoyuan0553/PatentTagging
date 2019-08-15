@@ -10,10 +10,10 @@
 #include <pugixml.hpp>
 
 #include "ThreadModelInterface.h"
-#include "ConcurrentQueue.h"
+#include "CQueue.h"
 
 class XmlIOReaderThread :
-        public IOThreadInterface<CQueue<std::string>,
+        public IOThreadInterface<ConcurrentQueue<std::string>,
                 CQueue<pugi::xml_document*>> {
 
     std::vector<pugi::xml_document*> batchOutput_;

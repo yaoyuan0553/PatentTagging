@@ -13,12 +13,12 @@
 #include "ThreadJob.h"
 #include "ThreadModelInterface.h"
 #include "XpathQueryTextFormatter.h"
-#include "ConcurrentQueue.h"
+#include "CQueue.h"
 
 class XmlTagTextPrinterProcessorXpathThread :
-    public InputOutputThreadInterface<CQueue<pugi::xml_document*>, CQueue<std::string>> {
+    public InputOutputThreadInterface<CQueue<pugi::xml_document*>, CQueue<std::string*>> {
 
-    std::vector<std::string> batchOutput_;
+    std::vector<std::string*> batchOutput_;
 
     XpathQueryTextFormatterDict xpathQueryTextFormatterDict_;
 
@@ -33,7 +33,7 @@ class XmlTagTextPrinterProcessorXpathThread :
 public:
     explicit XmlTagTextPrinterProcessorXpathThread(
             CQueue<pugi::xml_document*>& inputQueue,
-            CQueue<std::string>& outputQueue,
+            CQueue<std::string*>& outputQueue,
             const XpathQueryTextFormatterDict& xpathQueryTextFormatterDict,
             int batchSize = 128) :
             InputOutputThreadInterface(inputQueue, outputQueue, batchSize),

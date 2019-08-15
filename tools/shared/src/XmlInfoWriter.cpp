@@ -7,7 +7,7 @@
 #include <iostream>
 
 
-void XmlInfoWriter::internalRun(ConcurrentQueue<std::string> &outputInfoQueue)
+void XmlInfoWriter::internalRun(CQueue<std::string> &outputInfoQueue)
 {
     using namespace std;
 

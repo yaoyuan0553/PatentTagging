@@ -23,7 +23,10 @@ void XmlTagTextPrinterWriterThread::internalRun()
 
         if (quit) break;
 
-        outputFile << info;
+        outputFile << *info;
+
+        // NOTE: caller release data
+        delete info;
     }
 
 #if defined(DEBUG)

@@ -18,9 +18,9 @@ protected:
     std::string pathFilename_;
     std::string outputFilename_;
 
-    CQueue<std::string> filenameQueue_;
+    ConcurrentQueue<std::string> filenameQueue_;
     CQueue<pugi::xml_document*> xmlDocQueue_;
-    CQueue<std::string> outputStringQueue_;
+    CQueue<std::string*> outputStringQueue_;
 
     void initializeData() override
     {
@@ -41,8 +41,8 @@ protected:
 
     void executeThreads() final
     {
-        StatsThread<std::string, true> processedStats(outputStringQueue_,
-                                                      filenameQueue_.totalPushedItems());
+        StatsThread<std::string*, true> processedStats(outputStringQueue_,
+                filenameQueue_.totalPushedItems());
 
         readerPool_.runAll();
         processorPool_.runAll();

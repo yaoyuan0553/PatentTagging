@@ -11,12 +11,12 @@
 #include <tqdm.h>
 
 #include "ThreadJob.h"
-#include "ConcurrentQueue.h"
+#include "CQueue.h"
 
 
 template <typename T, bool presetTotal = false>
 class StatsThread : public ThreadJob<> {
-    ConcurrentQueue<T>& dataQueue_;
+    CQueue<T>& dataQueue_;
     size_t total_ = 0;
     void internalRun() override
     {
@@ -42,11 +42,11 @@ class StatsThread : public ThreadJob<> {
     }
 
 public:
-    explicit StatsThread(ConcurrentQueue<T>& dataQueue) : dataQueue_(dataQueue)
+    explicit StatsThread(CQueue<T>& dataQueue) : dataQueue_(dataQueue)
     {
         static_assert(!presetTotal, "presetTotal must be set to false to use this overload\n");
     }
-    StatsThread(ConcurrentQueue<T>& dataQueue, int total) : dataQueue_(dataQueue), total_(total)
+    StatsThread(CQueue<T>& dataQueue, int total) : dataQueue_(dataQueue), total_(total)
     {
         static_assert(presetTotal, "presetTotal must be set to true to use this overload\n");
     }

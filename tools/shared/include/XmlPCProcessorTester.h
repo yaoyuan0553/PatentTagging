@@ -17,7 +17,7 @@
 class TestTagTextExtractor : public ThreadJob<> {
     XmlTagTextWalker walker_;
 
-    CQueue<std::string>& filenameQueue_;
+    ConcurrentQueue<std::string>& filenameQueue_;
     CQueue<std::string>& outputQueue_;
 
     /* every tag needs a formatter otherwise it'll be
@@ -31,7 +31,7 @@ class TestTagTextExtractor : public ThreadJob<> {
     void addBatchToQueue(std::vector<std::string>& batchOutput);
 
 public:
-    TestTagTextExtractor(CQueue<std::string>& filenameQueue,
+    TestTagTextExtractor(ConcurrentQueue<std::string>& filenameQueue,
             CQueue<std::string>& outputQueue,
             const TagTextOutputFormatterDict& fileOutputFormatterDict,
             const TagNodeFilterDict& tagNodeFilterDict,
@@ -47,7 +47,7 @@ protected:
     std::string pathFilename_;
     std::string outputFilename_;
 
-    CQueue<std::string> filenameQueue_;
+    ConcurrentQueue<std::string> filenameQueue_;
     CQueue<std::string> outputQueue_;
 
     /* user of this class must implement

@@ -18,15 +18,16 @@ void XmlTagTextPrinterProcessorThread::internalRun()
 
         doc->traverse(walker_);
 
-        string singleOutput;
+        // to be released by caller (writer thread)
+        string* singleOutput = new string;
         TagTextDict& tagTextDict = walker_.getTagTexts();
         try {
             for (const auto&[tag, textVec] : tagTextDict) {
                 if (tagTextOutputFormatterDict_.getKeys().find(tag) ==
                     tagTextOutputFormatterDict_.getKeys().end())
-                    singleOutput += tag + ": " + tagTextDict.at(tag)[0] + '\n';
+                    *singleOutput += tag + ": " + tagTextDict.at(tag)[0] + '\n';
                 else
-                    singleOutput += tag + ": " +
+                    *singleOutput += tag + ": " +
                             tagTextOutputFormatterDict_[tag](tagTextDict) + '\n';
             }
         }
@@ -37,8 +38,8 @@ void XmlTagTextPrinterProcessorThread::internalRun()
                     "that doesn't exist in filter\n";
             exit(-1);
         }
-        singleOutput += '\n';
-        batchOutput_.emplace_back(singleOutput);
+        *singleOutput += '\n';
+        batchOutput_.push_back(singleOutput);
 
         if (++bN % batchSize_ == 0)
             addBatchToQueue();

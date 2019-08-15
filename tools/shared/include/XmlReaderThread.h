@@ -11,7 +11,7 @@
 #include <pugixml.hpp>
 
 #include "ThreadModelInterface.h"
-#include "ConcurrentQueue.h"
+#include "CQueue.h"
 
 class XmlReaderThread :
         public OutputThreadInterface<CQueue<pugi::xml_document*>> {

@@ -242,7 +242,7 @@ class GenerateDatabase : public XmlPCProcessorInterface {
     string pathFilename_;
     string outputFilename_;
 
-    CQueue<string> filenameQueue_;
+    ConcurrentQueue<string> filenameQueue_;
     unordered_map<string, CQueue<string>> outputQueueByFile_;
 
     void prepareNodeFilters() final
@@ -278,17 +278,17 @@ class GenerateDatabase : public XmlPCProcessorInterface {
 
     void executeThreads() final
     {
-        StatsThread<string, false> processedStats(filenameQueue_);
-        producers_.runAll();
-        consumers_.runAll();
-        processedStats.run();
-
-        producers_.waitAll();
-        for (auto& [_, outputQueue] : outputQueueByFile_)
-            outputQueue.setQuitSignal();
-
-        consumers_.waitAll();
-        processedStats.wait();
+//        StatsThread<string, false> processedStats(filenameQueue_);
+//        producers_.runAll();
+//        consumers_.runAll();
+//        processedStats.run();
+//
+//        producers_.waitAll();
+//        for (auto& [_, outputQueue] : outputQueueByFile_)
+//            outputQueue.setQuitSignal();
+//
+//        consumers_.waitAll();
+//        processedStats.wait();
     }
 
 

@@ -12,17 +12,17 @@
 
 #include "ThreadJob.h"
 #include "ThreadModelInterface.h"
-#include "ConcurrentQueue.h"
+#include "CQueue.h"
 #include "XmlTagTextWalker.h"
 #include "FormatFunctors.h"
 
 
 class XmlTagTextPrinterProcessorThread :
-    public InputOutputThreadInterface<CQueue<pugi::xml_document*>, CQueue<std::string>> {
+    public InputOutputThreadInterface<CQueue<pugi::xml_document*>, CQueue<std::string*>> {
 
     XmlTagTextWalker            walker_;
 
-    std::vector<std::string>    batchOutput_;
+    std::vector<std::string*>    batchOutput_;
 
     /* every tag needs a formatter otherwise it'll be
      * the first element of tagTextTag[tag][0] */
@@ -38,7 +38,7 @@ class XmlTagTextPrinterProcessorThread :
 
 public:
     explicit XmlTagTextPrinterProcessorThread(CQueue<pugi::xml_document*>& inputQueue,
-            CQueue<std::string>& outputQueue,
+            CQueue<std::string*>& outputQueue,
             const TagNodeFilterDict& tagNodeFilterDict,
             const TagTextOutputFormatterDict& tagTextOutputFormatterDict,
             int batchSize = 128) :

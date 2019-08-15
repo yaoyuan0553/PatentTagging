@@ -10,17 +10,17 @@
 
 #include "ThreadJob.h"
 #include "ThreadModelInterface.h"
-#include "ConcurrentQueue.h"
+#include "CQueue.h"
 
 class XmlTagTextPrinterWriterThread :
-        public InputThreadInterface<CQueue<std::string>> {
+        public InputThreadInterface<CQueue<std::string*>> {
 
     std::string filename_;
 
     void internalRun() final;
 
 public:
-    XmlTagTextPrinterWriterThread(std::string_view filename, CQueue<std::string>& textQueue) :
+    XmlTagTextPrinterWriterThread(std::string_view filename, CQueue<std::string*>& textQueue) :
         InputThreadInterface(textQueue), filename_(filename) { }
 };
 

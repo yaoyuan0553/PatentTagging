@@ -15,10 +15,11 @@ void XmlTagTextPrinterProcessorXpathThread::internalRun()
 
         if (quit) break;
 
-        string singleOutput;
+        // WARNING: must be released by caller
+        string* singleOutput = new string;
         try {
             for (const string& request : xpathQueryTextFormatterDict_.getOrderedKeys()) {
-                singleOutput += request + ": " + xpathQueryTextFormatterDict_[request](*doc) + '\n';
+                *singleOutput += request + ": " + xpathQueryTextFormatterDict_[request](*doc) + '\n';
             }
         }
         catch (std::out_of_range& e) {
@@ -26,8 +27,8 @@ void XmlTagTextPrinterProcessorXpathThread::internalRun()
             PERROR("out_of_range()");
         }
 
-        singleOutput += '\n';
-        batchOutput_.emplace_back(singleOutput);
+        *singleOutput += '\n';
+        batchOutput_.push_back(singleOutput);
 
         if (++bN % batchSize_ == 0)
             addBatchToQueue();

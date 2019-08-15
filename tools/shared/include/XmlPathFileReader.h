@@ -9,9 +9,9 @@
 
 #include <string>
 #include <pugixml.hpp>
-#include <ConcurrentQueue.h>
 
 #include "ThreadJob.h"
+#include "CQueue.h"
 
 
 class XmlPathFileReader : public ThreadJob<> {
