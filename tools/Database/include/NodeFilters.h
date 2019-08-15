@@ -44,6 +44,9 @@ std::string TagNodeWalkerFilter<Walker>::operator()(pugi::xml_node& node)
 }
 
 using IdNodeFilter = TagNodeWalkerFilter<IdNodeWalker>;
+class IdDateNodeFilter : public TagNodeWalkerFilter<IdNodeWalker> {
+
+};
 
 using ClaimNodeWalker = ExhaustiveChildWalker;
 

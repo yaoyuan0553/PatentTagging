@@ -15,8 +15,10 @@ void XmlIOReaderThread::internalRun()
 
         if (quit) break;
 
-        if (!doc->load_file(filename.c_str()))
+        if (!doc->load_file(filename.c_str())) {
+            fprintf(stderr, "Load xml doc [%s] failed\n", filename.c_str());
             continue;
+        }
 
         batchOutput_.push_back(doc);
 

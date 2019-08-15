@@ -26,7 +26,9 @@ void XmlTagTextPrinterWriterThread::internalRun()
         outputFile << info;
     }
 
-    cout << "XmlTagTextPrinterWriterThread finished\n";
+#if defined(DEBUG)
+    cerr << "XmlTagTextPrinterWriterThread finished\n";
+#endif
 
     outputFile.close();
 }

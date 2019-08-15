@@ -12,7 +12,7 @@
 bool ExhaustiveChildWalker::for_each(pugi::xml_node& node)
 {
     if (node.type() == pugi::node_pcdata)
-        innerText_ += node.text().get();
+        innerText_ += std::string(node.text().get()) + ' ';
 
     return true;
 }

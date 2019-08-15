@@ -34,4 +34,8 @@
 
 #include "XmlIPOTagTextPrinterTester.h"
 
+#include "XpathQuery.h"
+#include "XpathQueryString.h"
+#include "XpathQueryTextFormatter.h"
+
 #endif //TOOLS_SHARED_H
