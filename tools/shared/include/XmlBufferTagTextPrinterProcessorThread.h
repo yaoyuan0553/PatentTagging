@@ -14,31 +14,30 @@ class XmlBufferTagTextPrinterProcessorThread :
         public InputOutputThreadInterface<CQueue<std::pair<char*, size_t>>,
                 CQueue<std::string*>> {
 
-        std::vector<std::string*> batchOutput_;
+    std::vector<std::string*> batchOutput_;
 
-        XpathQueryTextFormatterDict xpathQueryTextFormatterDict_;
+    XpathQueryTextFormatterDict xpathQueryTextFormatterDict_;
 
-        void internalRun() final;
+    void internalRun() final;
 
-        inline void addBatchToQueue()
-        {
-            outputData_.push(batchOutput_);
-            batchOutput_.clear();
-        }
+    inline void addBatchToQueue()
+    {
+        outputData_.push(batchOutput_);
+        batchOutput_.clear();
+    }
 
-        public:
-        explicit XmlBufferTagTextPrinterProcessorThread(
-                CQueue<std::pair<char*, size_t>>& inputQueue,
-                CQueue<std::string*>& outputQueue,
-        const XpathQueryTextFormatterDict& xpathQueryTextFormatterDict,
-        int batchSize = 128) :
-        InputOutputThreadInterface(inputQueue, outputQueue, batchSize),
-                xpathQueryTextFormatterDict_(xpathQueryTextFormatterDict)
-        {
-            batchOutput_.reserve(batchSize_);
-        }
-
-    };
+public:
+    explicit XmlBufferTagTextPrinterProcessorThread(
+            CQueue<std::pair<char*, size_t>>& inputQueue,
+            CQueue<std::string*>& outputQueue,
+            const XpathQueryTextFormatterDict& xpathQueryTextFormatterDict,
+            int batchSize = 128) :
+            InputOutputThreadInterface(inputQueue, outputQueue, batchSize),
+            xpathQueryTextFormatterDict_(xpathQueryTextFormatterDict)
+    {
+        batchOutput_.reserve(batchSize_);
+    }
+};
 
 
 #endif //TOOLS_XMLBUFFERTAGTEXTPRINTERPROCESSORTHREAD_H

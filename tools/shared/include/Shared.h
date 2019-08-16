@@ -52,5 +52,7 @@
 #include "XmlBufferTagTextPrinterProcessorThread.h"
 #include "XmlBufferXpathIPOTagTextPrinterTester.h"
 
+#include "XmlXpathIPOGenericInterface.h"
+
 
 #endif //TOOLS_SHARED_H

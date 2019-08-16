@@ -33,6 +33,26 @@ public:
 /* query for publication date and application date */
 using XpathDateQuery = XpathIdQuery;
 
+/* query for publication id and application id */
+class XpathIpcQuery : public XpathQueryTextFormatter {
+    XpathQuery ipcNodesQuery_;
+    XpathQuery subNodesQuery_;
+    inline static constexpr char queryStr[] =
+        ".//section | .//class | .//subclass | .//main-group | "
+        ".//subgroup";
+public:
+    std::string operator()(pugi::xml_node& root) override;
+
+    DEFINE_DEFAULT_CLONE(XpathIpcQuery);
+
+    explicit XpathIpcQuery(const XpathQueryString& rootNodeQueryStr) :
+            ipcNodesQuery_(rootNodeQueryStr),
+            subNodesQuery_(queryStr) { }
+};
+
+
+/* Title  is just a simple default query */
+using XpathTitleQuery = XpathSingleQueryDefaultInnerText;
 
 class XpathAbstractQuery : public XpathQueryTextFormatter {
     ExhaustiveChildWalker walker_;

@@ -8,11 +8,13 @@
 
 #include "Shared.h"
 
-#include "NodeFilters.h"
 #include "DataTypes.h"
-#include "OutputFormatters.h"
 
 #include "XpathQueryCollection.h"
+
+#include "DatabaseGenerator.h"
+
+#include "Helper.h"
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -137,167 +139,8 @@ struct OutputFileCollection {
 };
 
 
-class DatabaseFileWriter : public ThreadJob<CQueue<DataRecord*>&> {
-    inline static constexpr char DEFAULT_FILE_PREFIX[] = "patent-data";
-    inline static constexpr int RECORDS_PER_FILE = 20000;
-    inline static constexpr uint32_t MAX_FILE_SIZE = 1 << 30;   // 1 GB file size limit
-
-    fs::path rootDir_;
-    const int recordsPerFile_;
-
-    fs::path binFilename_ = DEFAULT_FILE_PREFIX;
-    int binNo_ = 0;
-
-    /* two kinds of entry (pid & aid) to find index entries */
-    IndexTableWithSpecificKey pidIndexTable_, aidIndexTable_;
-    /* where real index value stores memory released on class
-     * destruction */
-    vector<IndexValue*> indexValueList;
-    IndexTable& indexTable_;
-
-    vector<string> tagsToWrite_;
-
-    /* for formatting tag text writing to the data file */
-    DatabaseOutputFormatterDict databaseOutputFormatterDict_;
-
-    /* data file buffer */
-    DataRecordFile dataRecordFile_;
-    uint32_t nRecords = 0;
-
-    void internalRun(CQueue<DataRecord*>& outputQueue) final
-    {
-        for (;;)
-        {
-            auto [record, quit] = outputQueue.pop();
-
-            if (quit) break;
-
-            appendToIndexTable(record);
-            appendToDataRecordFile(record);
-
-            // release memory of DataRecord already copied/processed data
-            // of this record and add them into index table & data file
-            delete record;
-        }
-    }
 
 
-    void appendToIndexTable(DataRecord* record)
-    {
-        indexTable_.appendIndexValue([&](IndexValue* iv) {
-            iv->pid = record->at(tags::publication_reference)[0];
-            iv->aid = record->at(tags::application_reference)[0];
-//         TODO: appDate
-//        indexValueList.back()->appDate = record->()
-            iv->binId = binNo_;
-//            iv->ipcList = record->at(tags::classification);
-        });
-        // TODO: ti, ai, ci, di, offset
-    }
-
-    void appendToDataRecordFile(DataRecord* record)
-    {
-        uint32_t recordSize = sizeof(uint32_t) + sizeof(uint32_t) * tagsToWrite_.size();
-        vector<string> tagFormattedText;
-        tagFormattedText.reserve(tagsToWrite_.size());
-        for (const auto& tag : tagsToWrite_) {
-            tagFormattedText.push_back(databaseOutputFormatterDict_[tag](record->at(tag)));
-            recordSize += tagFormattedText.back().length();
-        }
-//        if (!dataRecordFile_.appendRecord(tagFormattedText, recordSize)) {
-//            fs::path binFilename = rootDir_ / binFilename_;
-//            binFilename += to_string(binNo_) + ".bin";
-//#ifdef DEBUG
-//            cout << binFilename << '\n';
-//#endif
-//            // synchronized version. in async, there should be multiple DataRecordFile
-//            // to avoid clearing buffer before I/O finishes
-//            dataRecordFile_.writeToFile(binFilename.c_str());
-//            dataRecordFile_.clear();
-//            binNo_++;
-//            if (!dataRecordFile_.appendRecord(tagFormattedText, recordSize)) {
-//                fprintf(stderr, "%s: something is wrong here %d\n", __FUNCTION__, __LINE__);
-//                exit(-1);
-//            }
-//        }
-        nRecords++;
-    }
-
-public:
-    DatabaseFileWriter(const fs::path& rootDir, CQueue<DataRecord*>& outputQueue,
-            const vector<string>& tagsToWrite, IndexTable& indexTable,
-            const int recordsPerFile = RECORDS_PER_FILE) :
-        ThreadJob(outputQueue), rootDir_(rootDir), recordsPerFile_(recordsPerFile),
-        indexTable_(indexTable), tagsToWrite_(tagsToWrite) { }
-
-    ~DatabaseFileWriter() final
-    {
-        for (IndexValue* iv : indexValueList)
-            delete iv;
-    }
-};
-
-
-class GenerateDatabase : public XmlPCProcessorInterface {
-    string pathFilename_;
-    string outputFilename_;
-
-    ConcurrentQueue<string> filenameQueue_;
-    unordered_map<string, CQueue<string>> outputQueueByFile_;
-
-    void prepareNodeFilters() final
-    {
-        tagNodeFilterDict_.add<IdNodeFilter>(tags::publication_reference);
-        tagNodeFilterDict_.add<IdNodeFilter>(tags::application_reference);
-    }
-
-    void prepareOutputFormatters() final
-    {
-        tagTextOutputFormatterDict_.add<FirstClassOutput>(outputFilename_);
-    }
-
-    void initializeData() final
-    {
-        XmlPathFileReader xmlFileReader(pathFilename_, filenameQueue_);
-        xmlFileReader.runOnMain();
-
-        outputQueueByFile_.emplace(piecewise_construct, make_tuple(outputFilename_), make_tuple());
-    }
-
-    void initializeThreads() final
-    {
-        for (int i = 0; i < nProducers_; i++)
-            producers_.add<PatentTagTextCollector>(filenameQueue_, outputQueueByFile_,
-                                                   tagTextOutputFormatterDict_, tagNodeFilterDict_, 1024);
-/*
-        for (auto& [filename, outputQueue] : outputQueueByFile_)
-            consumers_.add<>(filename, outputQueue);
-*/
-
-    }
-
-    void executeThreads() final
-    {
-//        StatsThread<string, false> processedStats(filenameQueue_);
-//        producers_.runAll();
-//        consumers_.runAll();
-//        processedStats.run();
-//
-//        producers_.waitAll();
-//        for (auto& [_, outputQueue] : outputQueueByFile_)
-//            outputQueue.setQuitSignal();
-//
-//        consumers_.waitAll();
-//        processedStats.wait();
-    }
-
-
-public:
-    GenerateDatabase(std::string_view pathFilename,
-            std::string_view outputFilename, int nProducers) :
-            pathFilename_(pathFilename), outputFilename_(outputFilename)
-    { nProducers_ = nProducers; }
-};
 
 
 void testDataRecordFile()
@@ -456,83 +299,64 @@ void testIndexTable()
     getchar();
 }
 
-class TagTester : public XmlPCProcessorTester {
-    void prepareNodeFilters() final
-    {
-        tagNodeFilterDict_.add<IdNodeFilter>(tags::publication_reference);
-        tagNodeFilterDict_.add<IdNodeFilter>(tags::application_reference);
-//        tagNodeFilterDict_.add<AbstractGreedyNodeFilter>(tags::abstract);
-//        tagNodeFilterDict_.add<ClaimNodeFilter>(tags::claim);
-    }
-
-    void prepareOutputFormatters() final
-    {
-//        tagTextOutputFormatterDict_.add<AbstractDataFormatter>(tags::abstract);
-//        tagTextOutputFormatterDict_.add<ClaimDataFormatter>(tags::claim);
-    }
-
-public:
-    TagTester(string_view pathFilename, string_view outputFilename,
-            int nProducers) : XmlPCProcessorTester(pathFilename, outputFilename, nProducers)
-    { }
-};
-
-class IPOTagTester : public XmlIPOTagTextPrinterTester {
-    void prepareNodeFilters() final
-    {
-        tagNodeFilterDict_.add<IdNodeFilter>(tags::publication_reference);
-        tagNodeFilterDict_.add<IdNodeFilter>(tags::application_reference);
-        tagNodeFilterDict_.add<AbstractGreedyNodeFilter>(tags::abstract);
-        tagNodeFilterDict_.add<ClaimNodeFilter>(tags::claim);
-    }
-
-    void prepareOutputFormatters() final
-    {
-        tagTextOutputFormatterDict_.add<AbstractDataFormatter>(tags::abstract);
-        tagTextOutputFormatterDict_.add<ClaimDataFormatter>(tags::claim);
-    }
-public:
-    IPOTagTester(string_view pathFilename, string_view outputFilename,
-            int nReaders, int nProcessors) :
-            XmlIPOTagTextPrinterTester(pathFilename, outputFilename, nReaders, nProcessors) { }
-};
 
 class XpathIPOTagTester : public XmlBufferXpathIPOTagTextPrinterTester {
+    /* index file fields */
+    ISC_STRING(PID) = "pid";
+    ISC_STRING(AID) = "aid";
+    ISC_STRING(PUB_DATE) = "pubDate";
+    ISC_STRING(APP_DATE) = "appDate";
+    ISC_STRING(IPC) = "ipc";                // TODO
+
+    /* data file fields */
+    ISC_STRING(TITLE) = "title";
+    ISC_STRING(ABSTRACT) = "abstract";
+    ISC_STRING(CLAIM) = "claim";
+    ISC_STRING(DESCRIPTION) = "description";
+
     void initializeQuery() final
     {
 //        xpathQueryTextFormatterDict_.add<XpathSingleQueryGreedyNoExtraSpaceInnerText>(
 //                "claimText", XpathQueryString("//claim-text")
 //                );
         xpathQueryTextFormatterDict_.add<XpathIdQuery>(
-                "pid", "//publication-reference",
+                PID, "//publication-reference",
                 vector<XpathQueryString>{".//country", ".//doc-number", ".//kind"}
         );
 
         xpathQueryTextFormatterDict_.add<XpathIdQuery>(
-                "aid", "//application-reference",
+                AID, "//application-reference",
                 vector<XpathQueryString>{".//country", ".//doc-number"}
         );
 
         xpathQueryTextFormatterDict_.add<XpathDateQuery>(
-                "pubDate", "//publication-reference",
+                PUB_DATE, "//publication-reference",
                 vector<XpathQueryString>{".//date"}
         );
 
         xpathQueryTextFormatterDict_.add<XpathDateQuery>(
-                "appDate", "//application-reference",
+                APP_DATE, "//application-reference",
                 vector<XpathQueryString>{".//date"}
         );
 
+        xpathQueryTextFormatterDict_.add<XpathIpcQuery>(
+                IPC, ".//classification-ipcr"
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathTitleQuery>(
+                TITLE, "//invention-title"
+        );
+
         xpathQueryTextFormatterDict_.add<XpathAbstractQuery>(
-                "abstract", "//abstract"
+                ABSTRACT, "//abstract"
         );
 
         xpathQueryTextFormatterDict_.add<XpathClaimQuery>(
-                "claim", "//claim"
+                CLAIM, "//claim"
         );
 
         xpathQueryTextFormatterDict_.add<XpathDescriptionQuery>(
-                "description", "//description"
+                DESCRIPTION, "//description"
         );
     }
 public:
@@ -542,7 +366,7 @@ public:
                     outputFilename, nReaders, nProcessors) { }
 };
 
-#define MODEL3
+#define MODEL4
 
 #if defined(MODEL2)
 struct Usage {
@@ -577,6 +401,19 @@ struct Usage {
     }
 };
 
+#elif defined(MODEL4)
+struct Usage {
+    static constexpr int ARGC = 6;
+    static void printAndExit(const char* program)
+    {
+        printf("Usage:\n\t%s <in-path-file> <out-data-dir> <out-index-file> "
+               "<n-readers> <n-workers>\n", program);
+        exit(-1);
+    }
+};
+
+#endif
+
 
 int main(int argc, char* argv[])
 {
@@ -584,15 +421,20 @@ int main(int argc, char* argv[])
     if (argc != Usage::ARGC)
         Usage::printAndExit(argv[0]);
 
-    XpathIPOTagTester tagTester(argv[1], argv[2], atoi(argv[3]), atoi(argv[4]));
+//    XpathIPOTagTester tagTester(argv[1], argv[2], atoi(argv[3]), atoi(argv[4]));
+//
+//    tagTester.process();
+//    testDataRecordFile();
 
-    tagTester.process();
+    DatabaseGenerator databaseGenerator(argv[1], argv[2], argv[3],
+            atoi(argv[4]), atoi(argv[5]));
+
+    databaseGenerator.process();
 */
-    testDataRecordFile();
+    Details::PrintStringRec("haha", "hehe", "huehue");
+    Details::PrintStringRec("xaxa");
+
 
     return 0;
 }
-
-#endif
-
 

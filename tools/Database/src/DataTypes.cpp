@@ -55,9 +55,9 @@ bool DataRecordFile::appendRecord(const vector<string>& dataText,
     auto iv = new IndexValue;
 
     // TODO: hard coded check
-    if (indexText.size() != 4)
+    if (indexText.size() != HARD_CODED_INDEX_FIELDS)
         PERROR("hard coded IndexValue doesn't match");
-    if (dataText.size() != 4)
+    if (dataText.size() != HARD_CODED_DATA_FIELDS)
         PERROR("hard coded IndexValue doesn't match");
 
     // TODO: change this, hard-coded for now
@@ -136,6 +136,13 @@ void DataRecordFile::writeSubIndexTableToFile(const char* filename)
     ofstream ofs(filename);
     for (IndexValue* iv : indexSubTable_) {
         ofs << *iv << '\n';
+    }
+}
+
+void DataRecordFile::writeSubIndexTableToStream(std::ostream& os)
+{
+    for (IndexValue* iv : indexSubTable_) {
+        os << *iv << '\n';
     }
 }
 

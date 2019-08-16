@@ -22,13 +22,18 @@
 #include <Utility.h>
 
 
-// TODO: find out the correct Application & Publication & Classifiaciton length
+#define HARD_CODED_DATA_FIELDS 4
+#define HARD_CODED_INDEX_FIELDS 4
+
+
 // size includes null-termination \0
 constexpr int APPLICATION_ID_SIZE = 20;
 constexpr int PUBLICATION_ID_SIZE = 25;
 
 /* format: \L\d\d\L-\d{1-3}/\d{2}*/
 constexpr int CLASSIFICATION_SIZE = 21;
+
+constexpr char DATA_FILE_PREFIX_NAME[] = "patent-data";
 
 
 /********************************/
@@ -189,6 +194,11 @@ struct IndexValue : public Stringifiable {
     std::string                 pid, aid, appDate, ipc;
     uint32_t                    binId, ti, ai, ci, di;
     uint64_t                    offset;
+
+    inline std::string header() const
+    {
+        return std::string("publication ID") + "application Id";
+    }
 
     inline std::string stringify() const final
     {
@@ -409,8 +419,17 @@ public:
     /* current number of records in the buffer */
     inline uint32_t numRecords() const { return nRecordsWritten_; }
 
+    /* returns true if number of records is 0 */
+    inline bool empty() const { return nRecordsWritten_ == 0; }
+
     /* return index sub table */
     inline const std::vector<IndexValue*>& indexSubTable() const { return indexSubTable_; }
+
+    /* return generate filename with a prefix (e.g. input: data, output data_12.bin) */
+    inline const std::string generateFilename(std::string_view prefix) const
+    {
+        return std::string(prefix) + "_" + std::to_string(binId_) + ".bin";
+    }
 
     /* clearing buffer of data and reset other fields */
     void clear();
@@ -423,6 +442,7 @@ public:
 
     // TODO: hacky implementation, to be changed later
     void writeSubIndexTableToFile(const char* filename);
+    void writeSubIndexTableToStream(std::ostream& os);
 
     /* appends a record into buffer
      * returns false if new record is too large for the buffer
