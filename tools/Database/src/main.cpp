@@ -190,7 +190,7 @@ class DatabaseFileWriter : public ThreadJob<CQueue<DataRecord*>&> {
 //         TODO: appDate
 //        indexValueList.back()->appDate = record->()
             iv->binId = binNo_;
-            iv->ipcList = record->at(tags::classification);
+//            iv->ipcList = record->at(tags::classification);
         });
         // TODO: ti, ai, ci, di, offset
     }
@@ -204,22 +204,22 @@ class DatabaseFileWriter : public ThreadJob<CQueue<DataRecord*>&> {
             tagFormattedText.push_back(databaseOutputFormatterDict_[tag](record->at(tag)));
             recordSize += tagFormattedText.back().length();
         }
-        if (!dataRecordFile_.appendRecord(tagFormattedText, recordSize)) {
-            fs::path binFilename = rootDir_ / binFilename_;
-            binFilename += to_string(binNo_) + ".bin";
-#ifdef DEBUG
-            cout << binFilename << '\n';
-#endif
-            // synchronized version. in async, there should be multiple DataRecordFile
-            // to avoid clearing buffer before I/O finishes
-            dataRecordFile_.writeToFile(binFilename.c_str());
-            dataRecordFile_.clear();
-            binNo_++;
-            if (!dataRecordFile_.appendRecord(tagFormattedText, recordSize)) {
-                fprintf(stderr, "%s: something is wrong here %d\n", __FUNCTION__, __LINE__);
-                exit(-1);
-            }
-        }
+//        if (!dataRecordFile_.appendRecord(tagFormattedText, recordSize)) {
+//            fs::path binFilename = rootDir_ / binFilename_;
+//            binFilename += to_string(binNo_) + ".bin";
+//#ifdef DEBUG
+//            cout << binFilename << '\n';
+//#endif
+//            // synchronized version. in async, there should be multiple DataRecordFile
+//            // to avoid clearing buffer before I/O finishes
+//            dataRecordFile_.writeToFile(binFilename.c_str());
+//            dataRecordFile_.clear();
+//            binNo_++;
+//            if (!dataRecordFile_.appendRecord(tagFormattedText, recordSize)) {
+//                fprintf(stderr, "%s: something is wrong here %d\n", __FUNCTION__, __LINE__);
+//                exit(-1);
+//            }
+//        }
         nRecords++;
     }
 
@@ -304,25 +304,36 @@ void testDataRecordFile()
 {
     DataRecordFile dataRecordFile;
 
-    vector<string> records = {"title", "abstract", "claim", "abstract"};
+    vector<string> dataText = {"title", "abstract", "claim", "description"};
 
+    vector<string> indexText = { "pid", "aid", "appDate", "ipc1,ipc2"};
+    vector<string> dataText1 = {"title1", "abstract1", "claim1", "description1"};
+
+    vector<string> indexText1 = { "pid11", "aid1", "appDate1", "ipc111,ipc21"};
 /*
     uint32_t recordSize = sizeof(uint32_t) * 5;
     for (const auto& r : records)
         recordSize += r.length();
 
 */
-    dataRecordFile.appendRecord(records);
+    if (!dataRecordFile.appendRecord(dataText, indexText))
+        cerr << "what?\n";
+
+    if (!dataRecordFile.appendRecord(dataText1, indexText1))
+        cerr << "what?\n";
 
     dataRecordFile.writeToFile("test.bin");
+    dataRecordFile.writeSubIndexTableToFile("index.tsv");
 
+    IndexValue iv0 = *dataRecordFile.indexSubTable()[0];
+    IndexValue iv1 = *dataRecordFile.indexSubTable()[1];
     dataRecordFile.clear();
 
     printf("should be empty\n");
 
     dataRecordFile.readFromFile("test.bin");
 
-    DataRecordEntry dre = dataRecordFile.GetRecordAtOffset(0);
+    DataRecordEntry dre = dataRecordFile.GetRecordAtOffset(DataRecordFile::FILE_HEAD_SIZE);
     cout << dre.size;
 
     printf("check dre\n");
@@ -334,16 +345,16 @@ void testIndexValueStream()
     iv.pid = "pid";
     iv.aid = "aid";
     iv.appDate = "appDate";
+    iv.ipc = "ipc1,ipc2,ipc3";
     iv.binId = 1;
     iv.offset = 2;
     iv.ti = 3;
     iv.ai = 4;
     iv.ci = 5;
     iv.di = 6;
-    iv.ipcList = {"okay", "hello"};
 
     cout << iv << '\n';
-    stringstream ss("ppp\taaaaa\taappp\t2\t3\t2222\t4444\t555\t12\thuehue,haha\t23");
+    stringstream ss("pid\taid\tappDate\tipc\tbinId\toffset\tti\tai\tci\tdi\t");
     ss >> iv;
 
     cout << iv << '\n';
@@ -512,17 +523,17 @@ class XpathIPOTagTester : public XmlBufferXpathIPOTagTextPrinterTester {
                 vector<XpathQueryString>{".//date"}
         );
 
-//        xpathQueryTextFormatterDict_.add<XpathAbstractQuery>(
-//                "abstract", "//abstract"
-//        );
-//
-//        xpathQueryTextFormatterDict_.add<XpathClaimQuery>(
-//                "claim", "//claim"
-//        );
-//
-//        xpathQueryTextFormatterDict_.add<XpathDescriptionQuery>(
-//                "description", "//description"
-//        );
+        xpathQueryTextFormatterDict_.add<XpathAbstractQuery>(
+                "abstract", "//abstract"
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathClaimQuery>(
+                "claim", "//claim"
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathDescriptionQuery>(
+                "description", "//description"
+        );
     }
 public:
     XpathIPOTagTester(string_view pathFilename, string_view outputFilename,
@@ -569,12 +580,15 @@ struct Usage {
 
 int main(int argc, char* argv[])
 {
+/*
     if (argc != Usage::ARGC)
         Usage::printAndExit(argv[0]);
 
     XpathIPOTagTester tagTester(argv[1], argv[2], atoi(argv[3]), atoi(argv[4]));
 
     tagTester.process();
+*/
+    testDataRecordFile();
 
     return 0;
 }

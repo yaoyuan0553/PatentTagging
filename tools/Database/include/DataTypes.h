@@ -17,6 +17,7 @@
 #include <map>
 #include <iostream>
 #include <set>
+#include <atomic>
 
 #include <Utility.h>
 
@@ -185,23 +186,24 @@ public:
 */
 
 struct IndexValue : public Stringifiable {
-    // WARNING: update this when IndexValue is changed
-    inline static constexpr int N_FIELDS = 10;
-
-    std::string                 pid, aid, appDate;
-    uint32_t                    binId, offset, ti, ai, ci, di;
-    std::vector<std::string>    ipcList;
+    std::string                 pid, aid, appDate, ipc;
+    uint32_t                    binId, ti, ai, ci, di;
+    uint64_t                    offset;
 
     inline std::string stringify() const final
     {
         std::string str(
-                pid +'\t' + aid + '\t' + appDate + '\t' +
-            std::to_string(binId) + '\t' + std::to_string(offset) + '\t' +
-            std::to_string(ti) + '\t' + std::to_string(ai) + '\t' +
-            std::to_string(ci) + '\t' + std::to_string(di) + '\t');
-        for (const auto& ipc : ipcList)
-            str += ipc + ',';
-        str.pop_back();
+                pid +'\t' +
+                aid + '\t' +
+                appDate + '\t' +
+                ipc + '\t' +
+                std::to_string(binId) + '\t' +
+                std::to_string(offset) + '\t' +
+                std::to_string(ti) + '\t' +
+                std::to_string(ai) + '\t' +
+                std::to_string(ci) + '\t' +
+                std::to_string(di)
+        );
 
         return str;
     }
@@ -241,6 +243,8 @@ public:
         return str;
     }
 };
+
+
 
 /* Index Table configurable with multiple types of keys
  * to lookup data value */
@@ -339,27 +343,52 @@ struct DataRecordEntry {
     char*       description;
 };
 
+/* Data table data layout
+ * -------------------------------------------------------------
+ * | real bytes of data | number of records | data records...  |
+ * -------------------------------------------------------------
+ * */
 
 /* storing of Data Record File in memory
  * in charge of writing/reading file to/from disk */
 class DataRecordFile : public FileReadWritable {
-    inline static constexpr uint32_t MAX_FILE_SIZE = 1 << 30;   // 1 GB file size limit
 
-    char* buf_;
+    /* accumulate number of data record files created
+     * used to assign unique number for each object
+     * created */
+    inline static std::atomic_uint32_t nextBinId_ = 0;
+
+    /* data file unique number for the current object
+     * assigned upon construction */
+    uint32_t binId_;
+
+    /* immutable pointer pointing to start of buffer */
+    char* const buf_;
+    /* references pointing to bytes and record count stored in buffer */
+    uint64_t& nBytesWritten_;
+    uint32_t& nRecordsWritten_;
+
     /* points to the current location of writing */
     char* curBuf_;
-    uint32_t nBytesWritten_;
-    uint32_t nRecordsWritten_;
 
-    inline void incrementBy(uint32_t size)
+    std::vector<IndexValue*> indexSubTable_;
+
+    inline void incrementBy(size_t size)
     {
         curBuf_ += size;
         nBytesWritten_ += size;
     }
 
 public:
+    inline static constexpr size_t MAX_FILE_SIZE = 1 << 30;   // 1 GB file size limit
 
-    DataRecordFile() : buf_(new char[MAX_FILE_SIZE])
+    inline static constexpr auto FILE_HEAD_SIZE =
+            sizeof(decltype(nBytesWritten_)) +
+            sizeof(decltype(nRecordsWritten_));
+
+    DataRecordFile() : buf_(new char[MAX_FILE_SIZE]),
+            nBytesWritten_(*(uint64_t*)buf_),
+            nRecordsWritten_(*(uint32_t*)(buf_ + sizeof(decltype(nBytesWritten_))))
     {
         clear();
     }
@@ -367,6 +396,8 @@ public:
     ~DataRecordFile() final
     {
         delete[] buf_;
+        for (IndexValue* iv : indexSubTable_)
+            delete iv;
     }
 
     /* total bytes allocated */
@@ -378,6 +409,9 @@ public:
     /* current number of records in the buffer */
     inline uint32_t numRecords() const { return nRecordsWritten_; }
 
+    /* return index sub table */
+    inline const std::vector<IndexValue*>& indexSubTable() const { return indexSubTable_; }
+
     /* clearing buffer of data and reset other fields */
     void clear();
 
@@ -387,10 +421,15 @@ public:
     /* read buffer from file */
     void readFromFile(const char* filename) final;
 
+    // TODO: hacky implementation, to be changed later
+    void writeSubIndexTableToFile(const char* filename);
+
     /* appends a record into buffer
      * returns false if new record is too large for the buffer
      * true if append succeeds */
-    bool appendRecord(const std::vector<std::string>& formattedText, uint32_t recordSize = 0);
+    bool appendRecord(const std::vector<std::string>& dataText,
+            const std::vector<std::string>& indexText,
+            const uint32_t* recordSize = nullptr);
 
     /* returns a DataRecordEntry pointing at the offset
      * caller is responsible for the correctness of the offset */

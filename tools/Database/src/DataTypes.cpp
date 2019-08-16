@@ -13,10 +13,17 @@ using namespace std;
 
 void DataRecordFile::clear()
 {
+    /* atomically obtains file id */
+    binId_ = nextBinId_.fetch_add(1);
+
     memset(buf_, 0, MAX_FILE_SIZE);
-    curBuf_ = buf_;
-    nBytesWritten_ = 0;
+    curBuf_ = buf_ + FILE_HEAD_SIZE;
+    nBytesWritten_ = FILE_HEAD_SIZE;
     nRecordsWritten_ = 0;
+
+    for (IndexValue* iv : indexSubTable_)
+        delete iv;
+    indexSubTable_.clear();
 }
 
 void DataRecordFile::writeToFile(const char* filename)
@@ -28,26 +35,57 @@ void DataRecordFile::writeToFile(const char* filename)
     fclose(filePtr);
 }
 
-bool DataRecordFile::appendRecord(const vector<string>& formattedText, uint32_t recordSize)
+bool DataRecordFile::appendRecord(const vector<string>& dataText,
+        const vector<string>& indexText,
+        const uint32_t* recordSize)
 {
-    if (recordSize == 0) {
-        recordSize = sizeof(uint32_t) + sizeof(uint32_t) * formattedText.size();
-        for (const auto& t : formattedText)
-            recordSize += t.length();
+    uint32_t rsz;
+    if (recordSize == nullptr) {
+        rsz = sizeof(uint32_t) + sizeof(uint32_t) * dataText.size();
+        for (const auto& t : dataText)
+            rsz += t.length();
     }
+    else
+        rsz = *recordSize;
 
-    if (bytesWritten() + recordSize > capacity())
+    if (bytesWritten() + rsz > capacity())
         return false;
 
-    *(uint32_t*)curBuf_ = recordSize;
+    /* create new IndexValue */
+    auto iv = new IndexValue;
+
+    // TODO: hard coded check
+    if (indexText.size() != 4)
+        PERROR("hard coded IndexValue doesn't match");
+    if (dataText.size() != 4)
+        PERROR("hard coded IndexValue doesn't match");
+
+    // TODO: change this, hard-coded for now
+    iv->pid = indexText[0];
+    iv->aid = indexText[1];
+    iv->appDate = indexText[2];
+    iv->ipc = indexText[3];
+    iv->binId = binId_;
+    iv->offset = curBuf_ - buf_;
+    iv->ti = sizeof(uint32_t);
+    iv->ai = iv->ti + dataText[0].length() + sizeof(uint32_t);
+    iv->ci = iv->ai + dataText[1].length() + sizeof(uint32_t);
+    iv->di = iv->ci + dataText[2].length() + sizeof(uint32_t);
+
+    /* append to Data File (buf_)*/
+    *(uint32_t*)curBuf_ = rsz;
     incrementBy(sizeof(uint32_t));
-    for (const auto& t : formattedText) {
+    for (const auto& t : dataText) {
         *(uint32_t*) curBuf_ = t.length();
         incrementBy(sizeof(uint32_t));
         memcpy(curBuf_, t.c_str(), t.length());
         incrementBy(t.length());
     }
+    /* update records written */
     nRecordsWritten_++;
+
+    /* append to index subtable */
+    indexSubTable_.push_back(iv);
 
     return true;
 }
@@ -60,8 +98,6 @@ void DataRecordFile::readFromFile(const char* filename)
 
     if (fread(buf_, MAX_FILE_SIZE, 1, filePtr) != 1)
         PERROR("fread()");
-
-    nBytesWritten_ = MAX_FILE_SIZE; // make full so no-one appends new records without clearing
 
     fclose(filePtr);
 }
@@ -77,7 +113,7 @@ DataRecordEntry DataRecordFile::GetRecordAtOffset(uint32_t offset)
         curBuf += sizeof(uint32_t);                     \
         dataRecordEntry.bufMem = curBuf;                \
         curBuf += dataRecordEntry.sizeMem;              \
-        if (curBuf - buf_ > MAX_FILE_SIZE)              \
+        if ((size_t)(curBuf - buf_) > MAX_FILE_SIZE)    \
             PERROR("pointer exceeds file boundary");    \
     } while(0)
 
@@ -93,6 +129,14 @@ DataRecordEntry DataRecordFile::GetRecordAtOffset(uint32_t offset)
 #undef APPEND_INCR
 
     return dataRecordEntry;
+}
+
+void DataRecordFile::writeSubIndexTableToFile(const char* filename)
+{
+    ofstream ofs(filename);
+    for (IndexValue* iv : indexSubTable_) {
+        ofs << *iv << '\n';
+    }
 }
 
 void IndexTable::readFromFile(const char* filename)
@@ -153,6 +197,7 @@ istream& operator>>(std::istream& is, IndexValue& ie)
     getline(is, ie.pid, '\t');
     getline(is, ie.aid, '\t');
     getline(is, ie.appDate, '\t');
+    getline(is, ie.ipc, '\t');
 
 /* helper macro for repetitive code */
 #define GET_UINT32(name)            \
@@ -167,13 +212,6 @@ istream& operator>>(std::istream& is, IndexValue& ie)
     GET_UINT32(ai);
     GET_UINT32(ci);
     GET_UINT32(di);
-
-    getline(is, field, '\t');
-
-    ie.ipcList.clear();
-    stringstream ss(field);
-    for (string ipc; getline(ss, ipc, ',');)
-        ie.ipcList.push_back(ipc);
 
     return is;
 }
