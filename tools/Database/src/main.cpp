@@ -417,7 +417,6 @@ struct Usage {
 
 int main(int argc, char* argv[])
 {
-/*
     if (argc != Usage::ARGC)
         Usage::printAndExit(argv[0]);
 
@@ -430,9 +429,10 @@ int main(int argc, char* argv[])
             atoi(argv[4]), atoi(argv[5]));
 
     databaseGenerator.process();
-*/
-    Details::PrintStringRec("haha", "hehe", "huehue");
-    Details::PrintStringRec("xaxa");
+//    Details::PrintStringRec("haha", "hehe", "huehue");
+//    Details::PrintStringRec("xaxa");
+//
+//    cout << ConcatStringWithDelimiter("...", "Hello", "World", "it's", "xah") << '\n';
 
 
     return 0;

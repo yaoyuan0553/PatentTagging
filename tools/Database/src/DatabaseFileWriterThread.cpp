@@ -11,11 +11,14 @@ using namespace std;
 
 void DatabaseFileWriterThread::internalRun()
 {
-    ofstream ofs(indexFilename_);
-    if (!ofs.is_open()) {
+    ofstream indexFile(indexFilename_);
+    if (!indexFile.is_open()) {
         fprintf(stderr, "failed to open [%s]\n", indexFilename_.c_str());
         PERROR("ofstream");
     }
+
+    /* write header to index file */
+    indexFile << IndexValue::header << '\n';
 
     for (;;)
     {
@@ -28,10 +31,10 @@ void DatabaseFileWriterThread::internalRun()
                 (dataFileDir_ / dataRecordFile->generateFilename(
                         dataFilePrefixName_.c_str())).c_str());
 
-        dataRecordFile->writeSubIndexTableToStream(ofs);
+        dataRecordFile->writeSubIndexTableToStream(indexFile);
 
         // NOTE: release memory of dataRecordFile
         delete dataRecordFile;
     }
-    ofs.close();
+    indexFile.close();
 }

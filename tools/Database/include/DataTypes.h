@@ -20,6 +20,7 @@
 #include <atomic>
 
 #include <Utility.h>
+#include "Helper.h"
 
 
 #define HARD_CODED_DATA_FIELDS 4
@@ -191,31 +192,31 @@ public:
 */
 
 struct IndexValue : public Stringifiable {
+
+    inline static const std::string header = ConcatStringWithDelimiter("\t",
+            "Publication ID", "Application ID", "Application Date",
+            "Classification IPC", "Bin ID", "Offset", "Title Index",
+            "Abstract Index", "Claim Index", "Description Index");
+
     std::string                 pid, aid, appDate, ipc;
     uint32_t                    binId, ti, ai, ci, di;
     uint64_t                    offset;
 
-    inline std::string header() const
-    {
-        return std::string("publication ID") + "application Id";
-    }
+//    inline std::string header() const
+//    {
+//        return ConcatStringWithDelimiter("\t",
+//                "Publication ID", "Application ID", "Application Date",
+//                "Classification IPC", "Bin ID", "Offset", "Title Index",
+//                "Abstract Index", "Claim Index", "Description Index");
+//    }
 
     inline std::string stringify() const final
     {
-        std::string str(
-                pid +'\t' +
-                aid + '\t' +
-                appDate + '\t' +
-                ipc + '\t' +
-                std::to_string(binId) + '\t' +
-                std::to_string(offset) + '\t' +
-                std::to_string(ti) + '\t' +
-                std::to_string(ai) + '\t' +
-                std::to_string(ci) + '\t' +
-                std::to_string(di)
-        );
+        using std::to_string;
 
-        return str;
+        return ConcatStringWithDelimiter("\t", pid, aid, appDate, ipc,
+                to_string(binId), to_string(offset), to_string(ti),
+                to_string(ai), to_string(ci), to_string(di));
     }
 
     /* for file I/O */
