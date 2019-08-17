@@ -29,8 +29,12 @@ void DataRecordFile::clear()
 void DataRecordFile::writeToFile(const char* filename)
 {
     FILE* filePtr = fopen(filename, "wb");
+    if (!filePtr) {
+        fprintf(stderr, "failed to open file [%s]\n", filename);
+        PERROR("fopen()");
+    }
 
-    fwrite(buf_, MAX_FILE_SIZE, 1, filePtr);
+    fwrite(buf_, nBytesWritten_, 1, filePtr);
 
     fclose(filePtr);
 }
@@ -95,41 +99,25 @@ void DataRecordFile::readFromFile(const char* filename)
     clear();
 
     FILE* filePtr = fopen(filename, "rb");
+    if (!filePtr) {
+        fprintf(stderr, "failed to open file [%s]\n", filename);
+        PERROR("fopen()");
+    }
 
-    if (fread(buf_, MAX_FILE_SIZE, 1, filePtr) != 1)
+    /* interpret how many bytes are in the file */
+    if (fread(buf_, sizeof(decltype(nBytesWritten_)), 1, filePtr) != 1)
+        PERROR("fread() file size");
+
+    /* read the */
+    if (fread(buf_ + sizeof(decltype(nBytesWritten_)),
+            nBytesWritten_ - sizeof(decltype(nBytesWritten_)), 1, filePtr) != 1)
         PERROR("fread()");
+
+    printf("read %lu bytes\n", nBytesWritten_);
 
     fclose(filePtr);
 }
 
-DataRecordEntry DataRecordFile::GetRecordAtOffset(uint32_t offset)
-{
-    if (offset > MAX_FILE_SIZE)
-        PERROR("offset exceeds file size");
-
-#define APPEND_INCR(sizeMem, bufMem)                    \
-    do {                                                \
-        dataRecordEntry.sizeMem = *(uint32_t*)curBuf;   \
-        curBuf += sizeof(uint32_t);                     \
-        dataRecordEntry.bufMem = curBuf;                \
-        curBuf += dataRecordEntry.sizeMem;              \
-        if ((size_t)(curBuf - buf_) > MAX_FILE_SIZE)    \
-            PERROR("pointer exceeds file boundary");    \
-    } while(0)
-
-    char* curBuf = buf_ + offset;
-    DataRecordEntry dataRecordEntry;
-    dataRecordEntry.size = *(uint32_t*)curBuf;
-    curBuf += sizeof(uint32_t);
-    APPEND_INCR(ts, title);
-    APPEND_INCR(as, abstract);
-    APPEND_INCR(cs, claim);
-    APPEND_INCR(ds, description);
-
-#undef APPEND_INCR
-
-    return dataRecordEntry;
-}
 
 void DataRecordFile::writeSubIndexTableToFile(const char* filename)
 {
@@ -146,23 +134,76 @@ void DataRecordFile::writeSubIndexTableToStream(std::ostream& os)
     }
 }
 
+bool DataRecordFile::GetDataRecordAtOffset(uint64_t offset, DataRecord* dataRecord) const
+{
+    if (offset > nBytesWritten_) {
+        fprintf(stderr, "%s: offset %lu exceeds file [prefix_%u.bin] with %lu B\n",
+                __FUNCTION__, offset, binId_, nBytesWritten_);
+        return false;
+    }
+
+/* to check if an increment of the pointer exceeds the boundary of the file */
+#define INCR_AND_CHECK(sz)                                                          \
+    do {                                                                            \
+        curBuf += sz;                                                               \
+        if ((uint64_t)(curBuf - buf_) > nBytesWritten_) {                           \
+        fprintf(stderr, "%s: offset %lu exceeds file [prefix_%u.bin] with %lu B\n", \
+                    __FUNCTION__, curBuf - buf_, binId_, nBytesWritten_);           \
+            return false;                                                           \
+        }                                                                           \
+    } while (0)
+
+    const char* curBuf = buf_ + offset;
+    auto* size = (uint32_t*)curBuf;
+    INCR_AND_CHECK(sizeof(uint32_t));
+
+#define GET_SIZE_AND_STR(sz, str)           \
+    uint32_t* sz;                           \
+    const char* str;                        \
+    do {                                    \
+        sz = (uint32_t*)curBuf;             \
+        INCR_AND_CHECK(sizeof(uint32_t));   \
+        str = curBuf;                       \
+        INCR_AND_CHECK(*sz);                \
+    } while(0)
+
+    GET_SIZE_AND_STR(ts, title);
+    GET_SIZE_AND_STR(as, abstract);
+    GET_SIZE_AND_STR(cs, claim);
+    GET_SIZE_AND_STR(ds, description);
+
+    *dataRecord = DataRecord(*size, *ts, *as, *cs, *ds, title, abstract, claim, description);
+
+#undef GET_SIZE_AND_STR
+#undef INCR_AND_CHECK
+
+    return true;
+}
+
+
 void IndexTable::readFromFile(const char* filename)
 {
     if (!valList_.empty())
         PERROR("valList must be empty before reading from file");
 
-    ifstream ifs((string(filename)));
+    ifstream ifs(filename);
     if (!ifs.is_open()) {
         fprintf(stderr, "file [%s] failed to open\n", filename);
         PERROR("ifstream open");
     }
 
-    for (string line; getline(ifs, line);) {
+    string line;
+    getline(ifs, line); // discard the first line as it is a title
+
+    for (; getline(ifs, line);) {
         istringstream ss(line);
         auto* iv = new IndexValue;
         ss >> *iv;
 
+        /* keep track of all IndexValues to be released later */
         valList_.push_back(iv);
+        /* hash IndexValues by their binID for easier access to data files */
+        indexByBinId_[iv->binId].push_back(iv);
 
         insertValueToTables(iv);
     }
@@ -224,3 +265,20 @@ istream& operator>>(std::istream& is, IndexValue& ie)
 }
 
 #undef GET_UINT32
+
+std::ostream& operator<<(std::ostream& os, const DataRecord& dataRecord)
+{
+    /* empty if any of them is null */
+    if (!dataRecord.title || !dataRecord.abstract ||
+            !dataRecord.claim || !dataRecord.description) {
+        os << "empty data record";
+        return os;
+    }
+
+    os << "title: " << *dataRecord.title << '\n' <<
+        "abstract: " << *dataRecord.abstract << '\n' <<
+        "claim: " << *dataRecord.claim << '\n' <<
+        "description: " << *dataRecord.description;
+
+    return os;
+}

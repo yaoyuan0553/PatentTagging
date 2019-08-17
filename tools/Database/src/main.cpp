@@ -16,6 +16,8 @@
 
 #include "Helper.h"
 
+#include "DatabaseQuery.h"
+
 using namespace std;
 namespace fs = std::filesystem;
 
@@ -71,72 +73,7 @@ public:
 };
 
 
-class PatentTagInfoStructCollector : ThreadJob<> {
-    XmlTagTextPtrWalker walker_;
 
-    CQueue<string>& filenameQueue_;
-
-    /* WARNING: reader must release memory */
-    CQueue<DataRecord*>& outputQueue_;
-
-
-    const int batchSize_;
-
-    void internalRun() final
-    {
-        vector<DataRecord*> batchOutput;
-        batchOutput.reserve(batchSize_);
-        for (int bN = 0;;)
-        {
-            pugi::xml_document doc;
-            auto [filename, quit] = filenameQueue_.pop();
-
-            if (quit) break;
-
-            pugi::xml_parse_result result = doc.load_file(filename.c_str());
-
-            if (!result) continue;
-
-            walker_.reset();
-            doc.traverse(walker_);
-
-            DataRecord* singleOutput = walker_.getTagTexts();
-            try {
-                batchOutput.push_back(singleOutput);
-            }
-            catch (range_error& e) {
-                cerr << e.what() << '\n';
-                cerr << "[" << filename << "]\n";
-                continue;
-            }
-
-            if (++bN % batchSize_ == 0)
-                addBatchToQueue(batchOutput);
-        }
-        if (!batchOutput.empty())
-            addBatchToQueue(batchOutput);
-    }
-
-    void addBatchToQueue(vector<DataRecord*>& batchOutput)
-    {
-        outputQueue_.push(batchOutput);
-        batchOutput.clear();
-    }
-
-public:
-    PatentTagInfoStructCollector(CQueue<string>& filenameQueue,
-            CQueue<DataRecord*>& outputQueue, const TagNodeFilterDict& tagNodeFilterDict,
-            const int batchSize = 128) :
-            walker_(tagNodeFilterDict),
-            filenameQueue_(filenameQueue), outputQueue_(outputQueue), batchSize_(batchSize)
-    { }
-};
-
-
-struct OutputFileCollection {
-    DataRecord dataRecord;
-
-};
 
 
 
@@ -176,8 +113,9 @@ void testDataRecordFile()
 
     dataRecordFile.readFromFile("test.bin");
 
-    DataRecordEntry dre = dataRecordFile.GetRecordAtOffset(DataRecordFile::FILE_HEAD_SIZE);
-    cout << dre.size;
+    DataRecord rcd;
+    dataRecordFile.GetDataRecordAtOffset(DataRecordFile::FILE_HEAD_SIZE, &rcd);
+    cout << rcd << '\n';
 
     printf("check dre\n");
 }
@@ -412,7 +350,51 @@ struct Usage {
     }
 };
 
+//#elif defined(TEST_QUERY_API)
+struct QueryUsage {
+    static constexpr int ARGC = 3;
+    static void printAndExit(const char* program)
+    {
+        printf("Usage\n\t%s <index-file> <data-dir> \n", program);
+        exit(-1);
+    }
+};
+
 #endif
+
+void testDatabaseQuery(int argc, char* argv[])
+{
+    if (argc != QueryUsage::ARGC)
+        QueryUsage::printAndExit(argv[0]);
+
+    DatabaseQuery databaseQuery(argv[1], argv[2], "patent-data");
+
+    unordered_set<IndexValue*> result;
+    databaseQuery.getInfoByIdList(
+            {"US20140345317A1", "US20140122454A1", "US14351605", "US14356959"},
+            &result);
+
+    for (IndexValue* iv : result)
+        cout << *iv << '\n';
+
+    vector<string> resPid, resAid;
+    databaseQuery.getAllId(&resPid, &resAid);
+
+//    for (auto& id : resAid) {
+//        cout << id << '\n';
+//    }
+
+    DataRecord dataRecord;
+    databaseQuery.getContentById("US20140345317A1", &dataRecord);
+//    cout << dataRecord << '\n';
+
+    unordered_map<string, DataRecord> contentById;
+    databaseQuery.getContentByIdList(resPid, &contentById);
+
+//    for (const auto& [id, record] : contentById)
+//        cout << id << ": " << record << '\n';
+    cout << contentById.size() << endl;
+}
 
 
 int main(int argc, char* argv[])
@@ -429,11 +411,8 @@ int main(int argc, char* argv[])
             atoi(argv[4]), atoi(argv[5]));
 
     databaseGenerator.process();
-//    Details::PrintStringRec("haha", "hehe", "huehue");
-//    Details::PrintStringRec("xaxa");
-//
-//    cout << ConcatStringWithDelimiter("...", "Hello", "World", "it's", "xah") << '\n';
 
+//    testDatabaseQuery(argc, argv);
 
     return 0;
 }

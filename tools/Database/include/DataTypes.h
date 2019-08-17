@@ -53,7 +53,7 @@ struct FileReadWritable {
 };
 
 
-using DataRecord = std::unordered_map<std::string, std::vector<std::string>>;
+//using DataRecord = std::unordered_map<std::string, std::vector<std::string>>;
 /* need:
  * application-id,
  * publication-id,
@@ -273,47 +273,8 @@ private:
     /* hash tables for retrieving data */
     std::map<IndexKeyType, IndexTableWithSpecificKey> indexTables_;
 
-public:
-
-    explicit IndexTable(const std::vector<IndexKeyType>& ikeyTypes)
-    {
-        for (IndexKeyType kt : ikeyTypes)
-            indexTables_[kt] = IndexTableWithSpecificKey();
-    }
-
-    ~IndexTable() final
-    {
-        for (IndexValue* iv : valList_)
-            delete iv;
-    }
-
-    inline IndexTableWithSpecificKey& operator[](IndexKeyType kt)
-    {
-        return indexTables_[kt];
-    }
-
-    inline size_t numRecords() const { return valList_.size(); }
-
-    inline std::vector<IndexValue*>& indexValueList() { return valList_; }
-
-    inline const std::vector<IndexValue*>& indexValueList() const { return valList_; }
-
-    void reserve(size_t n);
-
-    /* append new value to data tables
-     * caller must initialize IndexValue inside
-     * the callback function ivInitFunc */
-    template <typename IvInitFunc>
-    void appendIndexValue(IvInitFunc&& ivInitFunc)
-    {
-        static_assert(std::is_invocable_v<IvInitFunc, IndexValue*>,
-                "callback function must of type void(*)(IndexValue*)");
-
-        valList_.push_back(new IndexValue);
-        ivInitFunc(valList_.back());
-
-        insertValueToTables(valList_.back());
-    }
+    /* hash table for storing IndexValue corresponding to bin files */
+    std::unordered_map<uint32_t, std::vector<IndexValue*>> indexByBinId_;
 
     inline void insertValueToTables(IndexValue* iv)
     {
@@ -333,26 +294,143 @@ public:
         }
     }
 
+public:
+
+    explicit IndexTable(const std::vector<IndexKeyType>& ikeyTypes)
+    {
+        for (IndexKeyType kt : ikeyTypes)
+            indexTables_[kt] = IndexTableWithSpecificKey();
+    }
+
+    ~IndexTable() final
+    {
+        for (IndexValue* iv : valList_)
+            delete iv;
+    }
+
+    inline const IndexTableWithSpecificKey& operator[](IndexKeyType kt)
+    {
+        return indexTables_[kt];
+    }
+
+    inline size_t numRecords() const { return valList_.size(); }
+
+    inline std::vector<IndexValue*>& indexValueList() { return valList_; }
+
+    inline const std::vector<IndexValue*>& indexValueList() const { return valList_; }
+
+    inline const std::vector<IndexValue*>& getIndexValueListByBinId(uint32_t binId)
+    {
+        return indexByBinId_[binId];
+    }
+
+    void reserve(size_t n);
+
+    /* append new value to data tables
+     * caller must initialize IndexValue inside
+     * the callback function ivInitFunc */
+    template <typename IvInitFunc>
+    void appendIndexValue(IvInitFunc&& ivInitFunc)
+    {
+        static_assert(std::is_invocable_v<IvInitFunc, IndexValue*>,
+                "callback function must of type void(*)(IndexValue*)");
+
+        valList_.push_back(new IndexValue);
+        ivInitFunc(valList_.back());
+
+        insertValueToTables(valList_.back());
+    }
+
+
     void readFromFile(const char* filename) final;
 
     void writeToFile(const char* filename) final;
 };
 
 
-/* stores pointer, user of this struct
- * must NOT deallocate DataRecordFile before reading */
-struct DataRecordEntry {
-    /* total size of this record */
-    uint32_t    size;
-    /* size of each string field */
-    uint32_t    ts, as, cs, ds;
-    /* not these strings are NOT null-terminated
-     * their sizes are indicated by ts, as, cs, ds */
-    char*       title;
-    char*       abstract;
-    char*       claim;
-    char*       description;
+/* used to interpret & copy-out records stored in data file buffers */
+struct DataRecord {
+    /* read only attributes */
+    uint32_t size = 0;
+    uint32_t ts = 0, as = 0, cs = 0, ds = 0;
+    const std::string* title = nullptr;
+    const std::string* abstract = nullptr;
+    const std::string* claim = nullptr;
+    const std::string* description = nullptr;
+
+    DataRecord() = default;
+
+    DataRecord(
+            uint32_t _size,
+            uint32_t _ts,
+            uint32_t _as,
+            uint32_t _cs,
+            uint32_t _ds,
+            const char* _title,
+            const char*_abstract,
+            const char* _claim,
+            const char* _description) :
+            size(_size),
+            ts(_ts),
+            as(_as),
+            cs(_cs),
+            ds(_ds),
+            title(new std::string(_title, _title + _ts)),
+            abstract(new std::string(_abstract, _abstract + _as)),
+            claim(new std::string(_claim, _claim + _cs)),
+            description(new std::string(_description, _description + _ds))
+    { }
+    ~DataRecord()
+    {
+        delete title;
+        delete abstract;
+        delete claim;
+        delete description;
+    }
+
+    /* allow move constructor */
+    DataRecord(DataRecord&& other) noexcept : size(other.size), ts(other.ts),
+            as(other.as), cs(other.cs), ds(other.ds),
+            title(other.title), abstract(other.abstract), claim(other.claim),
+            description(other.description)
+    {
+        /* swap pointers */
+        other.title = nullptr;
+        other.abstract = nullptr;
+        other.claim = nullptr;
+        other.description = nullptr;
+    }
+
+    /* disable copy constructor */
+    DataRecord(const DataRecord&) = delete;
+
+
+    DataRecord& operator=(DataRecord&& other) noexcept
+    {
+#define COPY_MEM(member) member = other.member
+#define COPY_MEM_AND_NULL(member)   \
+        COPY_MEM(member);           \
+        other.member = nullptr      \
+
+        COPY_MEM(size);
+        COPY_MEM(ts);
+        COPY_MEM(as);
+        COPY_MEM(cs);
+        COPY_MEM(ds);
+        COPY_MEM_AND_NULL(title);
+        COPY_MEM_AND_NULL(abstract);
+        COPY_MEM_AND_NULL(claim);
+        COPY_MEM_AND_NULL(description);
+
+#undef COPY_MEM_AND_NULL
+#undef COPY_MEM
+
+        return *this;
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const DataRecord& dataRecord);
 };
+
 
 /* Data table data layout
  * -------------------------------------------------------------
@@ -452,9 +530,10 @@ public:
             const std::vector<std::string>& indexText,
             const uint32_t* recordSize = nullptr);
 
-    /* returns a DataRecordEntry pointing at the offset
-     * caller is responsible for the correctness of the offset */
-    DataRecordEntry GetRecordAtOffset(uint32_t offset);
+
+    /* retrieves a copy of record data at given offset, stored in dataRecord pointer
+     * returns false if offset is invalid, and true on success */
+    bool GetDataRecordAtOffset(uint64_t offset, DataRecord* dataRecord) const;
 };
 
 
