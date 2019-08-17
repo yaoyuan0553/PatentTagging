@@ -122,8 +122,10 @@ class DatabaseGenerator : public XmlXpathIPOGenericInterface {
     {
         StatsThread<std::pair<char*, size_t>, true> processedStats(
                 xmlDocQueue_,
-                filenameQueue_.totalPushedItems());
-        StatsThread<DataRecordFile*, false> writtenStats(dataRecordFileQueue_);
+                filenameQueue_.totalPushedItems(),
+                "xmls parsed");
+        StatsThread<DataRecordFile*, false> writtenStats(dataRecordFileQueue_,
+                "data files written");
 
         readerPool_.runAll();
         processorPool_.runAll();

@@ -275,7 +275,7 @@ private:
 
 public:
 
-    IndexTable(const std::vector<IndexKeyType>& ikeyTypes)
+    explicit IndexTable(const std::vector<IndexKeyType>& ikeyTypes)
     {
         for (IndexKeyType kt : ikeyTypes)
             indexTables_[kt] = IndexTableWithSpecificKey();
