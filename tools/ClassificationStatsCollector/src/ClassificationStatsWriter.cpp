@@ -20,7 +20,6 @@ void ClassificationStatsWriter::internalRun(CQueue<std::string>& data)
         countByTag_[tag]++;
     }
 
-
     ofstream outputFile(filename_);
     for (const auto& [tag, count] : countByTag_)
         outputFile << tag << '\t' << count << '\n';

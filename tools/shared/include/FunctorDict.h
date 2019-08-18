@@ -22,6 +22,7 @@ class FunctorDict {
 
     std::unordered_map<std::string, Functor*> functorDict_;
     std::unordered_set<std::string> keys_;
+    std::vector<std::string> orderedKeys_;
 
 public:
     auto& operator[](const std::string& str) { return *functorDict_[str]; }
@@ -32,15 +33,19 @@ public:
         if (!keys_.insert(name).second)
             return false;
         functorDict_[name] = new FunctorSub(std::forward<ConstructArgs>(args)...);
+        orderedKeys_.push_back(name);
         return true;
     }
 
     const std::unordered_set<std::string>& getKeys() const { return keys_; }
 
+    const std::vector<std::string>& getOrderedKeys() const { return orderedKeys_; }
+
     FunctorDict() = default;
 
     /* copy constructor for deep copy of Functor */
-    FunctorDict(const FunctorDict& other) : keys_(other.keys_)
+    FunctorDict(const FunctorDict& other) : keys_(other.keys_),
+            orderedKeys_(other.orderedKeys_)
     {
         for (const auto& [name, functor] : other.functorDict_)
             functorDict_[name] = functor->clone();
@@ -49,6 +54,7 @@ public:
     FunctorDict& operator=(const FunctorDict& other)
     {
         keys_ = other.keys_;
+        orderedKeys_ = other.orderedKeys_;
         for (const auto& [name, functor] : other.functorDict_)
             functorDict_[name] = functor->clone();
         return *this;

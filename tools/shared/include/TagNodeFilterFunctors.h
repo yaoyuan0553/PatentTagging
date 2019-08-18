@@ -17,7 +17,7 @@ class ExhaustiveChildWalker : public pugi::xml_tree_walker {
 public:
     bool for_each(pugi::xml_node& node) override;
     std::string getInnerText() const { return innerText_; }
-    void reset() { innerText_.clear(); }
+    void reset() { std::string().swap(innerText_); }
 };
 
 

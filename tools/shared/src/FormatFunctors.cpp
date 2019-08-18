@@ -81,3 +81,4 @@ std::string FirstClassOutput::operator()(const TagTextDict& tagTextDict)
 
     return "";
 }
+

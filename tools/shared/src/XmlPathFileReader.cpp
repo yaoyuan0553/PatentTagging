@@ -2,13 +2,13 @@
 // Created by yuan on 7/24/19.
 //
 
-#include "XmlFileReader.h"
+#include "XmlPathFileReader.h"
 
 #include <fstream>
 #include <stdio.h>
 
 
-void XmlFileReader::internalRun()
+void XmlPathFileReader::internalRun()
 {
     using namespace std;
     /* if input file is not setup properly

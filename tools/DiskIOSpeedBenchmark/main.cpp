@@ -18,7 +18,7 @@
 #include <sys/syscall.h>
 #include <sys/uio.h>
 
-#include <XmlFileReader.h>
+#include <XmlPathFileReader.h>
 #include <PatentTagTextCollector.h>
 #include "XmlPCProcessorInterface.h"
 #include "StatsThread.h"
@@ -326,8 +326,8 @@ class DiskIOSpeedBenchmark : public XmlPCProcessorInterface {
     void prepareOutputFormatters() final { }
     void initializeData() final
     {
-        XmlFileReader xmlFileReader(pathFilename1_, filenameQueue1_);
-        XmlFileReader xmlFileReader2(pathFilename2_, filenameQueue2_);
+        XmlPathFileReader xmlFileReader(pathFilename1_, filenameQueue1_);
+        XmlPathFileReader xmlFileReader2(pathFilename2_, filenameQueue2_);
         xmlFileReader.runOnMain();
         xmlFileReader2.runOnMain();
     }
@@ -452,7 +452,7 @@ class DiskIOBenchmarkWithCRead : public XmlPCProcessorInterface {
     void prepareOutputFormatters() final { }
     void initializeData() final
     {
-        XmlFileReader xmlFileReader(pathFilename_, filenameQueue_);
+        XmlPathFileReader xmlFileReader(pathFilename_, filenameQueue_);
 
         xmlFileReader.runOnMain();
     }
@@ -1061,14 +1061,25 @@ int main(int argc, char* argv[])
 
     diskIoBenchmarkWithCRead.process();
 */
-//    singleLargeFileIoSubmitSingleBenchmark(argv[1]);
+    singleLargeFileFreadBenchmark(argv[1]);
 
+/*
+    ifstream ifs(argv[1]);
+    if (!ifs.is_open())
+        PERROR("ifstream");
+    stringstream ss;
+    ss << ifs.rdbuf();
+    ifs.close();
+*/
+
+/*
     CQueue<string> filenameQueue;
-    XmlFileReader xmlFileReader(argv[1], filenameQueue);
+    XmlPathFileReader xmlFileReader(argv[1], filenameQueue);
 
     xmlFileReader.runOnMain();
 
     multipleFileIoSubmitBenchmark(filenameQueue);
+*/
 //    singleLargeFileReadvBenchmark(argv[1]);
 
     return 0;

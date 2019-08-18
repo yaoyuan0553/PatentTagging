@@ -15,6 +15,18 @@
 #include <algorithm>
 #include <regex>
 
+#include <sys/stat.h>
+
+
+
+#define PERROR(x...)                                                    \
+    do {                                                                \
+		fprintf(stderr, "[-] ERROR : " x);                              \
+		fprintf(stderr, "\n\tLocation : %s(), %s:%u\n", __FUNCTION__,   \
+			__FILE__, __LINE__);                                        \
+        exit(-1);                                                       \
+    } while (0)
+
 
 /* replace multiple occurrences of the oldDelimiter (2nd template argument)
  * with a single newDelimiter (1st template argument)
@@ -124,6 +136,17 @@ public:
         return operator()(str, length);
     }
 };
+
+/* retrieve file size without opening file */
+inline size_t GetFileSize(const char* filename)
+{
+    struct stat st;
+    if (stat(filename, &st) == 0)
+        return st.st_size;
+
+    fprintf(stderr, "GetFileSize() failed for file [%s]\n", filename);
+    PERROR("stat");
+}
 
 
 /* Cloneable Macros to shorten repetitive code */

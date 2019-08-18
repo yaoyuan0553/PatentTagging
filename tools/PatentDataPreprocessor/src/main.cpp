@@ -9,9 +9,9 @@
 #include "ThreadPool.h"
 
 #include "StatsThread.h"
-#include "XmlFileReader.h"
+#include "XmlPathFileReader.h"
 #include "PatentInfoCollector.h"
-#include "PatentInfoWriter.h"
+#include "XmlInfoWriter.h"
 #include "PatentInfoPC.h"
 
 #include "FormatFunctors.h"
@@ -51,7 +51,7 @@ void start(int argc, char* argv[])
     unordered_map<string, CQueue<string>> outputQueueByFile;
 
     /* collect file paths */
-    XmlFileReader xmlFileReader(argv[1], filenameQueue);
+    XmlPathFileReader xmlFileReader(argv[1], filenameQueue);
     xmlFileReader.runOnMain();
 
     /* construct outputQueues in-place */
@@ -64,7 +64,7 @@ void start(int argc, char* argv[])
                 tagTextOutputFormatterDict, tagNodeFilterDict);
 
     for (auto& [filename, outputQueue] : outputQueueByFile)
-        consumers.add<PatentInfoWriter>(filename, outputQueue);
+        consumers.add<XmlInfoWriter>(filename, outputQueue);
 
     StatsThread<string, true> writeStats(outputQueueByFile[argv[2]], filenameQueue.totalPushedItems());
 
