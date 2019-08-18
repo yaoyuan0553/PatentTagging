@@ -8,15 +8,15 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-add_executable(PatentDataPreprocessor src/main.cpp include/XmlFileReader.h src/XmlFileReader.cpp include/PatentInfoCollector.h src/PatentTagAbstractWalker.cpp include/PatentTagAbstractWalker.h src/PatentInfoCollector.cpp src/PatentInfoWriter.cpp include/PatentInfoWriter.h src/test.cpp include/Utility.h include/PatentInfoPC.h src/PatentInfoPC.cpp src/XmlTagTextWalker.cpp include/XmlTagTextWalker.h src/PatentTagTextCollector.cpp include/PatentTagTextCollector.h include/FormatFunctors.h include/FunctorDict.h src/FormatFunctors.cpp include/TagConstants.h include/TagNodeFilterFunctors.h src/TagNodeFilterFunctors.cpp)
+add_executable(PatentDataPreprocessor src/main.cpp include/PatentInfoCollector.h src/PatentTagAbstractWalker.cpp include/PatentTagAbstractWalker.h src/PatentInfoCollector.cpp src/test.cpp include/PatentInfoPC.h src/PatentInfoPC.cpp)
 
 target_include_directories(PatentDataPreprocessor PRIVATE
         ${CMAKE_SOURCE_DIR}/cpptqdm
-        ${CMAKE_SOURCE_DIR}/include
-        ${PROJECT_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/shared/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_link_libraries(PatentDataPreprocessor pugixml pthread stdc++fs)
+target_link_libraries(PatentDataPreprocessor pugixml pthread stdc++fs XmlSharedTools)
 
 file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/docs)

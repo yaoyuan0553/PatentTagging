@@ -6,7 +6,7 @@
 #include "PatentInfoPC.h"
 
 #include "PatentInfoCollector.h"
-#include "PatentInfoWriter.h"
+#include "XmlInfoWriter.h"
 
 
 void PatentInfoPC::initThreads()
@@ -16,8 +16,8 @@ void PatentInfoPC::initThreads()
     for (int i = 0; i < nProducers_; i++)
         producers.add<PatentInfoCollector>(filenameQueue_, outputInfoQueue_, splitAbstractQueue_);
 
-    consumers.add<PatentInfoWriter>(infoOutputFilename_, outputInfoQueue_);
-    consumers.add<PatentInfoWriter>(splitAbstractOutputFilename_, splitAbstractQueue_);
+    consumers.add<XmlInfoWriter>(infoOutputFilename_, outputInfoQueue_);
+    consumers.add<XmlInfoWriter>(splitAbstractOutputFilename_, splitAbstractQueue_);
 }
 
 void PatentInfoPC::runAll()

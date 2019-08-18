@@ -9,7 +9,7 @@ add_executable(PatentTagCollector src/main.cpp src/Semaphore.cpp src/PatentTagCo
 
 target_include_directories(PatentTagCollector PRIVATE
         ${CMAKE_SOURCE_DIR}/cpptqdm
-        ${CMAKE_SOURCE_DIR}/include
-        ${PROJECT_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/shared/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 target_link_libraries(PatentTagCollector pugixml pthread)

@@ -1,3 +1,4 @@
 [submodule "tools/cpptqdm"]
 	path = tools/cpptqdm
-	url = https://github.com/aminnj/cpptqdm.git
+	url = git@github.com:yaoyuan0553/cpptqdm.git
+    branch = master

@@ -4,5 +4,7 @@ bin/
 
 .clion*
 
-*.txt
 *.tsv
+
+*.a
+*.so
