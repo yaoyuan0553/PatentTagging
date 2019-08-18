@@ -22,7 +22,7 @@ class StatsThread : public ThreadJob<> {
     void internalRun() override
     {
         tqdm bar;
-        bar.set_label(statsTitle_);
+        bar.set_title(statsTitle_);
         for (;;)
         {
             auto i = dataQueue_.totalPoppedItems();

@@ -46,10 +46,19 @@ struct Stringifiable {
     virtual ~Stringifiable() = default;
 };
 
-struct FileReadWritable {
+struct FileReadable {
     virtual void readFromFile(const char* filename) = 0;
+    virtual ~FileReadable() = default;
+};
+
+struct FileWritable {
     virtual void writeToFile(const char* filename) = 0;
-    virtual ~FileReadWritable() = default;
+    virtual ~FileWritable() = default;
+};
+
+
+struct FileReadWritable : public FileReadable, public FileWritable {
+    ~FileReadWritable() override = default;
 };
 
 
@@ -408,21 +417,22 @@ struct DataRecord {
     DataRecord& operator=(DataRecord&& other) noexcept
     {
 #define COPY_MEM(member) member = other.member
-#define COPY_MEM_AND_NULL(member)   \
-        COPY_MEM(member);           \
-        other.member = nullptr      \
+#define DELETE_COPY_MEM_AND_NULL(member)    \
+        delete member;                      \
+        COPY_MEM(member);                   \
+        other.member = nullptr
 
         COPY_MEM(size);
         COPY_MEM(ts);
         COPY_MEM(as);
         COPY_MEM(cs);
         COPY_MEM(ds);
-        COPY_MEM_AND_NULL(title);
-        COPY_MEM_AND_NULL(abstract);
-        COPY_MEM_AND_NULL(claim);
-        COPY_MEM_AND_NULL(description);
+        DELETE_COPY_MEM_AND_NULL(title);
+        DELETE_COPY_MEM_AND_NULL(abstract);
+        DELETE_COPY_MEM_AND_NULL(claim);
+        DELETE_COPY_MEM_AND_NULL(description);
 
-#undef COPY_MEM_AND_NULL
+#undef DELETE_COPY_MEM_AND_NULL
 #undef COPY_MEM
 
         return *this;
