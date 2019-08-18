@@ -16,7 +16,7 @@
 
 #include "Helper.h"
 
-#include "DatabaseQuery.h"
+#include "DatabaseQueryManager.h"
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -367,7 +367,7 @@ void testDatabaseQuery(int argc, char* argv[])
     if (argc != QueryUsage::ARGC)
         QueryUsage::printAndExit(argv[0]);
 
-    DatabaseQuery databaseQuery(argv[1], argv[2], "patent-data");
+    DatabaseQueryManager databaseQuery(argv[1], argv[2], "patent-data");
 
     unordered_set<IndexValue*> result;
     databaseQuery.getInfoByIdList(
