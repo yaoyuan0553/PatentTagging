@@ -75,12 +75,15 @@ int main(int argc, char* argv[])
 //    for (IndexValue* iv : result)
 //        cout << *iv <<'\n';
 
+
     unordered_map<std::string, DataRecord> contentById;
     databaseQueryManager.getContentByIdList(idList, &contentById);
 
     for (const auto& [id, dr] : contentById) {
         cout << "ID: " << id << '\n' << dr << '\n';
     }
+
+    requestIdFile.close();
 
     return 0;
 }

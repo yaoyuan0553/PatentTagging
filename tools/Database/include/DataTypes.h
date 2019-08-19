@@ -19,6 +19,13 @@
 #include <set>
 #include <atomic>
 
+// WARNING: Non-portable code
+/* for linux file I/O */
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 #include <Utility.h>
 #include "Helper.h"
 
@@ -478,6 +485,8 @@ class DataRecordFile : public FileReadWritable {
         nBytesWritten_ += size;
     }
 
+    int fileHandle_ = -1;
+
 public:
     inline static constexpr size_t MAX_FILE_SIZE = 1 << 30;   // 1 GB file size limit
 
@@ -494,6 +503,8 @@ public:
 
     ~DataRecordFile() final
     {
+        if (fileHandle_ != -1)
+            close(fileHandle_);
         delete[] buf_;
         for (IndexValue* iv : indexSubTable_)
             delete iv;
@@ -528,6 +539,11 @@ public:
 
     /* read buffer from file */
     void readFromFile(const char* filename) final;
+
+    /* read record segment at offset from disk
+     * returns false if read failed
+     * returns true on success */
+    bool readRecordFromFile(uint64_t offset) const;
 
     // TODO: hacky implementation, to be changed later
     void writeSubIndexTableToFile(const char* filename);

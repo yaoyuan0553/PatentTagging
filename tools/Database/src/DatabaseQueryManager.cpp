@@ -100,6 +100,7 @@ void DatabaseQueryManager::getContentByIdList(const std::vector<std::string>& id
         indexByBinId[info->binId].push_back(info);
     }
 
+    // TODO: optimize for caching
     for (const auto& [binId, ivList]: indexByBinId) {
         DataRecordFile dataFile;
         dataFile.readFromFile(getBinFilenameWithBinId(binId).c_str());
