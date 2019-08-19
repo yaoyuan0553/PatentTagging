@@ -49,12 +49,15 @@ public:
 
     void getAllId(std::vector<std::string>* pidList = nullptr,
             std::vector<std::string>* aidList = nullptr) const;
+//    void getAllId(std::string* pidList = nullptr, std::string* aidList = nullptr);
 
     /* returns false if id is not found in index table */
     bool getContentById(const std::string& id, DataRecord* dataRecord) const;
 
     void getContentByIdList(const std::vector<std::string>& idList,
             std::unordered_map<std::string, DataRecord>* contentById) const;
+
+//    void getAllId(std::string* pidLIst, std::string* aidList) const;
 };
 
 

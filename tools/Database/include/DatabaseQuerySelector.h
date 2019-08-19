@@ -13,6 +13,8 @@
 
 extern "C"
 {
+
+
     IndexValue* IndexValue_new();
 
     const char* IndexValue_stringify(IndexValue* iv);
@@ -20,11 +22,21 @@ extern "C"
 
     /* DatabaseQueryManager */
     DatabaseQueryManager* DatabaseQueryManager_new(
-            const char* indexFilename,
-            const char* dataPath);
+            char* indexFilename,
+            char* dataPath);
+
+    void DatabaseQueryManager_delete(DatabaseQueryManager* dqm);
 
     bool DatabaseQueryManager_getInfoById(const std::string& id, IndexValue** output);
 
+
+    void DatabaseQueryManager_getAllId(DatabaseQueryManager* dqm,
+            char**& pidList,
+            char**& aidList,
+            int& size);
+
+    DataRecordCType DatabaseQueryManager_getContentById(DatabaseQueryManager* dqm,
+            const char* id/*, DataRecordCType* drct*/);
 
     /* deallocate functions */
     void delete_arrayPtr(void* arrPtr);

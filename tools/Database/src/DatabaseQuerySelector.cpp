@@ -3,15 +3,17 @@
 //
 
 #include <iostream>
+#include <fstream>
+#include <string>
 
 #include "DatabaseQuerySelector.h"
 
-#include <fstream>
 
 
 using namespace std;
 
 
+/*
 IndexValue* IndexValue_new()
 {
     return new IndexValue;
@@ -27,6 +29,78 @@ const char* IndexValue_stringify(IndexValue* iv)
 
     return cStr;
 }
+*/
+
+DatabaseQueryManager* DatabaseQueryManager_new(char* indexFilename,
+        char* dataPath)
+{
+    auto p = new DatabaseQueryManager(indexFilename, dataPath);
+//    printf("c++ &dqmPtr = %p\n", p);
+
+    return p;
+}
+
+void DatabaseQueryManager_delete(DatabaseQueryManager* dqm)
+{
+    delete dqm;
+}
+
+void DatabaseQueryManager_getAllId(DatabaseQueryManager* dqm,
+        char**& pidList,
+        char**& aidList,
+        int& size)
+{
+//    vector<string> *pidVec = new vector<string>, *aidVec = new vector<string>;
+    vector<string> pidVec, aidVec;
+    dqm->getAllId(&pidVec, &aidVec);
+
+    pidList = new char*[pidVec.size()];
+    aidList = new char*[aidVec.size()];
+    for (size_t i = 0; i < pidVec.size(); i++) {
+        auto len = pidVec[i].length();
+        pidList[i] = new char[len + 1];
+        memcpy(pidList[i], pidVec[i].c_str(), len);
+        pidList[i][len] = 0;
+    }
+
+    for (size_t i = 0; i < aidVec.size(); i++) {
+        auto len = aidVec[i].length();
+        aidList[i] = new char[len + 1];
+        memcpy(aidList[i], aidVec[i].c_str(), len);
+        aidList[i][len] = 0;
+    }
+    size = pidVec.size();
+}
+
+DataRecordCType DatabaseQueryManager_getContentById(DatabaseQueryManager* dqm,
+        const char* id/*, DataRecordCType* drct*/)
+{
+    DataRecord dr;
+    if (!dqm->getContentById(id, &dr))
+        return DataRecordCType();
+
+    DataRecordCType drct;
+
+    ConvertToDataRecordCType(&drct, &dr);
+
+#define PRINT(name) printf("c++: %s = %d\n", #name, drct.name);
+#define PRINT_STR(name) printf("c++: %s = %s\n", #name, drct.name);
+
+//    printf("c++: %d\n", drct.size);
+
+//    PRINT(size);
+//    PRINT(ts);
+//    PRINT(as);
+//    PRINT(cs);
+//    PRINT(ds);
+//
+//    PRINT_STR(title);
+//    printf("c++ &title = 0x%016lx\n", (uint64_t)(drct.title));
+//    printf("c++ &abstract = 0x%016lx\n", (uint64_t)(drct.abstract));
+
+    return drct;
+}
+
 
 //void delete_arrayPtr(void* arrPtr)
 //{

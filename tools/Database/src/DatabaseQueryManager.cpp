@@ -49,6 +49,20 @@ void DatabaseQueryManager::getInfoByIdList(const std::vector<std::string>& idLis
     }
 }
 
+//void DatabaseQueryManager::getAllId(std::string* pidList, std::string* aidList) const
+//{
+//
+//    if (pidList != nullptr) {
+//        pidList->reserve(pidTable.size());
+//        for (const auto& [pid, _] : pidTable)
+//            pidList->push_back(pid);
+//    }
+//    if (aidList != nullptr) {
+//        aidList->reserve(aidTable.size());
+//        for (const auto& [aid, _] : aidTable)
+//            aidList->push_back(aid);
+//    }
+//}
 void DatabaseQueryManager::getAllId(std::vector<std::string>* pidList,
         std::vector<std::string>* aidList) const
 {

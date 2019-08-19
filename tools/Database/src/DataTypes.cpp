@@ -387,3 +387,31 @@ std::ostream& operator<<(std::ostream& os, const DataRecord& dataRecord)
 
     return os;
 }
+
+void ConvertToDataRecordCType(DataRecordCType* drct, DataRecord* dataRecord)
+{
+#define COPY_FIELDS(field) drct->field = dataRecord->field
+#define MEM_COPY_FIELDS(field)                                  \
+    do {                                                        \
+        auto len = dataRecord->field->size();                   \
+        drct->field = new char[len + 1];                        \
+        memcpy(drct->field, dataRecord->field->c_str(), len);   \
+        drct->field[len] = 0;                                   \
+    } while (0)
+
+    COPY_FIELDS(size);
+    COPY_FIELDS(ts);
+    COPY_FIELDS(as);
+    COPY_FIELDS(cs);
+    COPY_FIELDS(ds);
+
+//    drct->title = *dataRecord->title;
+//    drct->abstract = *dataRecord->abstract;
+//    drct->claim = *dataRecord->claim;
+//    drct->description = *dataRecord->description;
+
+    MEM_COPY_FIELDS(title);
+    MEM_COPY_FIELDS(abstract);
+    MEM_COPY_FIELDS(claim);
+    MEM_COPY_FIELDS(description);
+}

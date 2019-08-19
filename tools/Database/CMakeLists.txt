@@ -10,7 +10,7 @@ set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 add_executable(DatabaseGenerator src/main.cpp src/DataTypes.cpp include/DataTypes.h include/XpathQueryCollection.cpp include/XpathQueryCollection.h src/DataAndIndexGeneratorThread.cpp include/DataAndIndexGeneratorThread.h src/DatabaseFileWriterThread.cpp include/DatabaseFileWriterThread.h include/Helper.h src/DatabaseQueryManager.cpp include/DatabaseQueryManager.h)
-add_library(DatabaseQuerySelector SHARED src/DatabaseQuerySelector.cpp src/DatabaseQueryManager.cpp)
+add_library(DatabaseQuerySelector SHARED src/DatabaseQuerySelector.cpp src/DataTypes.cpp src/DatabaseQueryManager.cpp)
 add_executable(DatabaseQuerySelectorExe src/DatabaseQuerySelector.cpp src/DatabaseQueryManager.cpp src/DataTypes.cpp)
 
 target_include_directories(DatabaseGenerator PRIVATE

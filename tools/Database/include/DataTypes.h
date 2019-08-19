@@ -11,8 +11,6 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include <stdlib.h>
-#include <string.h>
 #include <array>
 #include <map>
 #include <iostream>
@@ -363,6 +361,20 @@ public:
     void writeToFile(const char* filename) final;
 };
 
+//#ifndef __cplusplus
+typedef struct __DataRecordCType {
+    uint32_t size = 0;
+    uint32_t ts = 0, as = 0, cs = 0, ds = 0;
+    char* title, *abstract, *claim, *description;
+//    std::string title, abstract, claim, description;
+} DataRecordCType;
+
+
+struct DataRecord;
+
+extern void ConvertToDataRecordCType(DataRecordCType* drct, DataRecord* dataRecord);
+
+//#endif
 
 /* used to interpret & copy-out records stored in data file buffers */
 struct DataRecord {
