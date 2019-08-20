@@ -144,8 +144,10 @@ class ContentReaderThread : public OutputThreadInterface<
             for (IndexValue* iv : ivList) {
                 // WARNING released by caller
                 auto* dr = new IdDataRecord;
-                if (!dataFile.GetDataRecordAtOffset(iv->offset, &dr->dataRecord))
+                if (!dataFile.GetDataRecordAtOffset(iv->offset, &dr->dataRecord)) {
+                    fprintf(stderr, "%s skipped\n", iv->pid.c_str());
                     continue;
+                }
                 dr->pid = iv->pid;
                 dr->aid = iv->aid;
                 outputData_.push(dr);
