@@ -38,6 +38,13 @@ public:
         tail_ = (tail_ + 1) % maxSize_;
     }
 
+    void emplace_push(T&& item)
+    {
+        buffer_[tail_] = std::move(item);
+        curSize_++;
+        tail_ = (tail_ + 1) % maxSize_;
+    }
+
     T pop()
     {
         if (empty()) {

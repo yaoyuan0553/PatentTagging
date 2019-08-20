@@ -66,6 +66,22 @@ public:
         totalPushedItems_++;
     }
 
+    void emplace_push(T&& item)
+    {
+        using namespace std;
+
+        mutex_.lock();
+        while (staticQueue_.full()) {
+            mutex_.unlock();
+            this_thread::sleep_for(chrono::milliseconds(2));
+            mutex_.lock();
+        }
+        staticQueue_.emplace_push(std::forward<T>(item));
+        mutex_.unlock();
+
+        totalPushedItems_++;
+    }
+
     void push(const std::vector<T>& items)
     {
         using namespace std;

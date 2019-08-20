@@ -13,8 +13,6 @@
 
 extern "C"
 {
-
-
     IndexValue* IndexValue_new();
 
     const char* IndexValue_stringify(IndexValue* iv);
@@ -37,6 +35,9 @@ extern "C"
 
     DataRecordCType DatabaseQueryManager_getContentById(DatabaseQueryManager* dqm,
             const char* id/*, DataRecordCType* drct*/);
+
+    void DatabaseQueryManager_getContentByIdList(DatabaseQueryManager* dqm,
+            char** idList, IdDataRecordCType idDataRecord[], int size);
 
     /* deallocate functions */
     void delete_arrayPtr(void* arrPtr);

@@ -362,13 +362,25 @@ public:
 };
 
 //#ifndef __cplusplus
+//extern "C"
+//{
 typedef struct __DataRecordCType {
     uint32_t size = 0;
     uint32_t ts = 0, as = 0, cs = 0, ds = 0;
-    char* title, *abstract, *claim, *description;
+    char* title = nullptr, *abstract = nullptr,
+            *claim = nullptr, *description = nullptr;
 //    std::string title, abstract, claim, description;
 } DataRecordCType;
+//}
 
+typedef struct __IdDataRecordCType {
+    uint32_t size = 0;
+    uint32_t ts = 0, as = 0, cs = 0, ds = 0;
+    char* title = nullptr, *abstract = nullptr,
+            *claim = nullptr, *description = nullptr;
+    char* pid = nullptr, *aid = nullptr;
+//    std::string title, abstract, claim, description;
+} IdDataRecordCType;
 
 struct DataRecord;
 
@@ -432,32 +444,16 @@ struct DataRecord {
     /* disable copy constructor */
     DataRecord(const DataRecord&) = delete;
 
-
-    DataRecord& operator=(DataRecord&& other) noexcept
-    {
-#define COPY_MEM(member) member = other.member
-#define DELETE_COPY_MEM_AND_NULL(member)    \
-        delete member;                      \
-        COPY_MEM(member);                   \
-        other.member = nullptr
-
-        COPY_MEM(size);
-        COPY_MEM(ts);
-        COPY_MEM(as);
-        COPY_MEM(cs);
-        COPY_MEM(ds);
-        DELETE_COPY_MEM_AND_NULL(title);
-        DELETE_COPY_MEM_AND_NULL(abstract);
-        DELETE_COPY_MEM_AND_NULL(claim);
-        DELETE_COPY_MEM_AND_NULL(description);
-
-#undef DELETE_COPY_MEM_AND_NULL
-#undef COPY_MEM
-
-        return *this;
-    }
+    /* move assignment */
+    DataRecord& operator=(DataRecord&& other) noexcept;
 
     friend std::ostream& operator<<(std::ostream& os, const DataRecord& dataRecord);
+};
+
+struct IdDataRecord {
+    std::string pid;
+    std::string aid;
+    DataRecord dataRecord;
 };
 
 
@@ -549,13 +545,15 @@ public:
     /* write buffer to file */
     void writeToFile(const char* filename) final;
 
-    /* read buffer from file */
+    /* read buffer from file (doesn't not read the whole file)*/
     void readFromFile(const char* filename) final;
 
     /* read record segment at offset from disk
      * returns false if read failed
      * returns true on success */
     bool readRecordFromFile(uint64_t offset) const;
+
+    void readFromFileFull(const char* filename);
 
     // TODO: hacky implementation, to be changed later
     void writeSubIndexTableToFile(const char* filename);
@@ -572,6 +570,8 @@ public:
     /* retrieves a copy of record data at given offset, stored in dataRecord pointer
      * returns false if offset is invalid, and true on success */
     bool GetDataRecordAtOffset(uint64_t offset, DataRecord* dataRecord) const;
+
+    bool GetDataRecordAtOffset(uint64_t offset, IdDataRecordCType* dataRecord) const;
 };
 
 
