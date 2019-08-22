@@ -160,8 +160,8 @@ public:
                         const DatabaseQueryManager& databaseQueryManager,
                         const std::vector<std::string>& idList) :
             OutputThreadInterface(contentQueue),
-            databaseQueryManager_(databaseQueryManager),
-            idList_(idList) { }
+            idList_(idList),
+            databaseQueryManager_(databaseQueryManager) { }
 };
 
 #endif //TOOLS_DATABASEQUERYMANAGER_H
