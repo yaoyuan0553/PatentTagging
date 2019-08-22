@@ -6,7 +6,9 @@ include(UseSWIG)
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/swig_out/python)
+set(SWIG_OUT_DIR ${CMAKE_SOURCE_DIR}/swig_out/python)
+
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${SWIG_OUT_DIR})
 
 set_property(SOURCE DatabaseQueryPython.i PROPERTY CPLUSPLUS ON)
 
@@ -16,8 +18,8 @@ swig_add_library(
         DatabaseQueryPython
         TYPE SHARED
         LANGUAGE python
-        OUTPUT_DIR ${CMAKE_SOURCE_DIR}/swig_out/python
-        OUTFILE_DIR ${CMAKE_SOURCE_DIR}/swig_out/python
+        OUTPUT_DIR ${SWIG_OUT_DIR}
+        OUTFILE_DIR ${SWIG_OUT_DIR}
         SOURCES DatabaseQueryPython.i ${SWIG_WRAPPER_SRC_DIR}/DatabaseQueryWrapper.cpp ${SWIG_CPP_SRC_DIR}/src/DataTypes.cpp
 )
 
