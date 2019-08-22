@@ -123,7 +123,6 @@ Options:
 ```
 @output.txt
 
-read 82309793 bytes
 ID: US20140369904A1
 title: PROCESSES FOR PREPARING ALUMINA AND VARIOUS OTHER PRODUCTS
 abstract: There are provided processes for preparing alumina. These processes can comprise leaching an aluminum-containing material with HCl so as to obtain a leachate comprising aluminum ions and a solid, and separating said solid from said leachate; reacting said leachate with HCl so as to obtain a liquid and a precipitate comprising said aluminum ions in the form of AlCl 3 , and separating said precipitate from said liquid; and heating said precipitate under conditions effective for converting AlCl 3  into Al 2 O 3  and optionally recovering gaseous HCl so-produced. These processes can also be used for preparing various other products such as hematite, MgO, silica and oxides of various metals, sulphates and chlorides of various metals, as well as rare earth elements, rare metals and aluminum. 
