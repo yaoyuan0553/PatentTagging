@@ -28,6 +28,17 @@
     } while (0)
 
 
+#define PSYS_FATAL(x...)                                                \
+	do {                                                                \
+		fprintf(stderr, "[-] SYSTEM ERROR : " x);                       \
+		fprintf(stderr, "\n\tLocation : %s(), %s:%u\n", __FUNCTION__,   \
+			__FILE__, __LINE__);                                        \
+		perror("      OS message ");                                    \
+		fprintf(stderr, "%d\n", errno);                                 \
+		exit(EXIT_FAILURE);                                             \
+	} while (0)
+
+
 /* replace multiple occurrences of the oldDelimiter (2nd template argument)
  * with a single newDelimiter (1st template argument)
  * the default oldDelimiter is a space character ' ' */

@@ -3,15 +3,18 @@
 //
 
 #include <iostream>
+#include <fstream>
+#include <string>
 
 #include "DatabaseQuerySelector.h"
 
-#include <fstream>
-
+#include "ThreadModelInterface.h"
+#include "StatsThread.h"
 
 using namespace std;
 
 
+/*
 IndexValue* IndexValue_new()
 {
     return new IndexValue;
@@ -27,6 +30,71 @@ const char* IndexValue_stringify(IndexValue* iv)
 
     return cStr;
 }
+*/
+
+DatabaseQueryManager* dqm_;
+
+DatabaseQueryManager* DatabaseQueryManager_new(char* indexFilename,
+        char* dataPath)
+{
+    auto p = new DatabaseQueryManager(indexFilename, dataPath);
+//    printf("c++ &dqmPtr = %p\n", p);
+    dqm_ = p;
+
+    return p;
+}
+
+void DatabaseQueryManager_delete(DatabaseQueryManager* dqm)
+{
+    delete dqm;
+}
+
+void DatabaseQueryManager_getAllId(DatabaseQueryManager* dqm,
+        char**& pidList,
+        char**& aidList,
+        int& size)
+{
+//    vector<string> *pidVec = new vector<string>, *aidVec = new vector<string>;
+    vector<string> pidVec, aidVec;
+    dqm_->getAllId(&pidVec, &aidVec);
+
+    pidList = new char*[pidVec.size()];
+    aidList = new char*[aidVec.size()];
+    for (size_t i = 0; i < pidVec.size(); i++) {
+        auto len = pidVec[i].length();
+        pidList[i] = new char[len + 1];
+        memcpy(pidList[i], pidVec[i].c_str(), len);
+        pidList[i][len] = 0;
+    }
+
+    for (size_t i = 0; i < aidVec.size(); i++) {
+        auto len = aidVec[i].length();
+        aidList[i] = new char[len + 1];
+        memcpy(aidList[i], aidVec[i].c_str(), len);
+        aidList[i][len] = 0;
+    }
+    size = pidVec.size();
+}
+
+DataRecordCType DatabaseQueryManager_getContentById(DatabaseQueryManager* dqm,
+        const char* id/*, DataRecordCType* drct*/)
+{
+    DataRecord dr;
+    DataRecordCType drct;
+    if (!dqm_->getContentById(id, &dr))
+        return DataRecordCType();
+
+    ConvertToDataRecordCType(&drct, &dr);
+
+    return drct;
+}
+
+void DatabaseQueryManager_getContentByIdList(DatabaseQueryManager* dqm,
+        char** id, IdDataRecordCType idDataRecord[], int size)
+{
+    dqm->getContentByIdList((const char**)id, idDataRecord, size);
+}
+
 
 //void delete_arrayPtr(void* arrPtr)
 //{
@@ -39,13 +107,41 @@ const char* IndexValue_stringify(IndexValue* iv)
 //}
 
 struct QueryUsage {
-    static constexpr int ARGC = 4;
+    static constexpr int ARGC = 5;
     static void printAndExit(const char* program)
     {
-        printf("Usage\n\t%s <index-file> <data-dir> <request-id-file>\n", program);
+        printf("Usage\n\t%s <index-file> <data-dir> <request-id-file> "
+               "<output-content-file>\n", program);
         exit(-1);
     }
 
+};
+
+class ContentWriterThread : public InputThreadInterface<
+        ConcurrentStaticQueue<IdDataRecord*>> {
+    string filename_;
+
+    void internalRun() final
+    {
+        ofstream ofs(filename_);
+        for (;;)
+        {
+            auto [content, quit] = inputData_.pop();
+
+            if (quit) break;
+
+            auto ids = string("<(PID)>: ") + content->pid + '\n' +
+                    "<(AID)>: " + content->aid;
+            ofs << ids << '\n' << content->dataRecord << '\n';
+
+            delete content;
+        }
+        ofs.close();
+    }
+
+public:
+    ContentWriterThread(InputType& contentQueue, std::string_view filename) :
+            InputThreadInterface(contentQueue), filename_(filename) { }
 };
 
 int main(int argc, char* argv[])
@@ -64,10 +160,11 @@ int main(int argc, char* argv[])
 
     vector<string> idList;
     for (string line; getline(requestIdFile, line);) {
-        if (line.length() == 14)
-            line.insert(6, 1, '0'); // insert 0 at position 6 (after US2007)
+//        if (line.length() == 14)
+//            line.insert(6, 1, '0'); // insert 0 at position 6 (after US2007)
         idList.push_back(line);
     }
+    requestIdFile.close();
 
 //    unordered_set<IndexValue*> result;
 //    databaseQueryManager.getInfoByIdList(idList, &result);
@@ -75,12 +172,21 @@ int main(int argc, char* argv[])
 //    for (IndexValue* iv : result)
 //        cout << *iv <<'\n';
 
-    unordered_map<std::string, DataRecord> contentById;
-    databaseQueryManager.getContentByIdList(idList, &contentById);
+    ContentReaderThread readContent(databaseQueryManager.getContentQueue(),
+            databaseQueryManager, idList);
+    ContentWriterThread writeContent(databaseQueryManager.getContentQueue(), argv[4]);
 
-    for (const auto& [id, dr] : contentById) {
-        cout << "ID: " << id << '\n' << dr << '\n';
-    }
+    StatsThread<IdDataRecord*, true> filesWritten(
+            databaseQueryManager.getContentQueue(), idList.size());
+
+    readContent.run();
+    writeContent.run();
+    filesWritten.run();
+
+    readContent.wait();
+    databaseQueryManager.getContentQueue().setQuitSignal();
+    writeContent.wait();
+    filesWritten.wait();
 
     return 0;
 }
