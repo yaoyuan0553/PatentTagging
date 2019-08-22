@@ -18,13 +18,14 @@ swig_add_library(
         LANGUAGE python
         OUTPUT_DIR ${CMAKE_SOURCE_DIR}/swig_out/python
         OUTFILE_DIR ${CMAKE_SOURCE_DIR}/swig_out/python
-        SOURCES DatabaseQueryPython.i ${SWIG_WRAPPER_SRC_DIR}/DatabaseQueryWrapper.cpp
+        SOURCES DatabaseQueryPython.i ${SWIG_WRAPPER_SRC_DIR}/DatabaseQueryWrapper.cpp ${SWIG_CPP_SRC_DIR}/src/DataTypes.cpp
 )
 
 target_include_directories(
         DatabaseQueryPython PRIVATE
         /usr/include/python3.6
+        ${CMAKE_SOURCE_DIR}/shared/include
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${SWIG_WRAPPER_SRC_DIR}
-        ${SWIG_CPP_SRC_DIR}
+        ${SWIG_CPP_SRC_DIR}/include
 )

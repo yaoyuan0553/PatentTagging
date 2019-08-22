@@ -26,6 +26,7 @@
 
 #include <Utility.h>
 #include "Helper.h"
+#include "DataBasicTypes.h"
 
 
 #define HARD_CODED_DATA_FIELDS 4
@@ -40,32 +41,6 @@ constexpr int PUBLICATION_ID_SIZE = 25;
 constexpr int CLASSIFICATION_SIZE = 21;
 
 constexpr char DATA_FILE_PREFIX_NAME[] = "patent-data";
-
-
-/********************************/
-/*    abstract interface types  */
-/********************************/
-
-struct Stringifiable {
-    virtual std::string stringify() const = 0;
-    virtual ~Stringifiable() = default;
-};
-
-struct FileReadable {
-    virtual void readFromFile(const char* filename) = 0;
-    virtual ~FileReadable() = default;
-};
-
-struct FileWritable {
-    virtual void writeToFile(const char* filename) = 0;
-    virtual ~FileWritable() = default;
-};
-
-
-struct FileReadWritable : public FileReadable, public FileWritable {
-    ~FileReadWritable() override = default;
-};
-
 
 //using DataRecord = std::unordered_map<std::string, std::vector<std::string>>;
 /* need:
@@ -84,160 +59,6 @@ struct FileReadWritable : public FileReadable, public FileWritable {
 using IndexKey = std::string;
 
 using ClassificationString = std::array<char, CLASSIFICATION_SIZE>;
-
-/* pack data size as it is */
-/*
-#pragma pack(push, 1)
-*/
-/* this struct defines how each index value is represented in memory and in disk
- * ------------------------------
- * |        field        | bytes |
- * |        datId        |  4    |
- * |    applicationId    |  AIS  |
- * |    publicationId    |  PIS  |
- * |        ti           |  4    |
- * |        ai           |  4    |
- * |        ci           |  4    |
- * |        di           |  4    |
- * |     classCount      |  2    |
- * |   classifications   |  VAR  |
- * -------------------------------
- * where AIS is short for APPLICATION_ID_SIZE
- * PIS is PUBLICATION_ID_SIZE
- * VAR stands for variable length, in this case
- * VAR = classCount * CLASSIFICATION_SIZE
- * *//*
-
-struct IndexValue : public Stringifiable {
-private:
-    */
-/* we ignore this field when packing data into buffer and deep copy
-     * at where it's pointed *//*
-
-    std::vector<ClassificationString>*  classifications_;                    // 8 bytes
-public:
-    uint32_t                            datId;                              // 4 bytes
-    char                                applicationId[APPLICATION_ID_SIZE]; // APPLICATION_ID_SIZE bytes
-    char                                publicationId[PUBLICATION_ID_SIZE]; // PUBLICATION_ID_SIZE bytes
-    uint32_t                            ti, ai, ci, di;                     // 16 bytes
-    uint16_t                            classCount;                         // 2 bytes
-
-    inline static constexpr int         INDEX_VALUE_STATIC_SIZE =
-            sizeof(uint32_t) +
-            sizeof(applicationId) / sizeof(char) +
-            sizeof(publicationId) / sizeof(char) +
-            sizeof(uint32_t) * 4 + sizeof(uint16_t);
-
-    std::vector<ClassificationString>& classifications() const { return *classifications_; }
-
-    IndexValue() : classifications_(new std::vector<ClassificationString>) { }
-
-    ~IndexValue()
-    {
-        delete classifications_;
-    }
-
-    inline std::string stringify() const final
-    {
-        std::string str(
-                std::to_string(datId) + '\t' +
-                applicationId + '\t' +
-                publicationId + '\t' +
-                std::to_string(ti) + '\t' +
-                std::to_string(ai) + '\t' +
-                std::to_string(ci) + '\t' +
-                std::to_string(di) + '\t' +
-                std::to_string(classCount));
-        for (const auto& cls : classifications()) {
-            str += cls.data();
-            str += ',';
-        }
-        str.back() = '\n';
-        return str;
-    }
-
-    */
-/* load IndexValue from buffer (disk) *//*
-
-    inline void load(char* buffer)
-    {
-        memcpy((char*)this + sizeof(void*), buffer, INDEX_VALUE_STATIC_SIZE);
-        for (short i = 0; i < classCount; i++) {
-            ClassificationString clsStr;
-            memcpy(clsStr.data(),
-                    buffer + INDEX_VALUE_STATIC_SIZE + i * CLASSIFICATION_SIZE,
-                    CLASSIFICATION_SIZE);
-            classifications_->push_back(clsStr);
-        }
-    }
-
-    */
-/* save IndexValue to buffer
-     * returns false if buffer isn't large enough
-     * remSize - remaining size of buffer
-     * sizeWritten - total written size into buffer *//*
-
-    bool save(char* buffer, const int remSize, int* sizeWritten)
-    {
-        if (remSize < getTotalBytes())
-            return false;
-
-        *sizeWritten = 0;
-        memcpy(buffer, (char*)this + sizeof(void*), INDEX_VALUE_STATIC_SIZE);
-        char* clsArray = buffer + INDEX_VALUE_STATIC_SIZE;
-        for (short i = 0; i < classCount; i++) {
-            memcpy(clsArray + i * CLASSIFICATION_SIZE,
-                    (*classifications_)[i].data(), CLASSIFICATION_SIZE);
-        }
-
-        *sizeWritten += getTotalBytes();
-
-        return true;
-    }
-
-    inline constexpr int getTotalBytes() const
-    {
-        return INDEX_VALUE_STATIC_SIZE + classCount * CLASSIFICATION_SIZE;
-    }
-};
-
-#pragma pack(pop)
-
-*/
-
-struct IndexValue : public Stringifiable {
-
-    inline static const std::string header = ConcatStringWithDelimiter("\t",
-            "Publication ID", "Application ID", "Application Date",
-            "Classification IPC", "Bin ID", "Offset", "Title Index",
-            "Abstract Index", "Claim Index", "Description Index");
-
-    std::string                 pid, aid, appDate, ipc;
-    uint32_t                    binId, ti, ai, ci, di;
-    uint64_t                    offset;
-
-//    inline std::string header() const
-//    {
-//        return ConcatStringWithDelimiter("\t",
-//                "Publication ID", "Application ID", "Application Date",
-//                "Classification IPC", "Bin ID", "Offset", "Title Index",
-//                "Abstract Index", "Claim Index", "Description Index");
-//    }
-
-    inline std::string stringify() const final
-    {
-        using std::to_string;
-
-        return ConcatStringWithDelimiter("\t", pid, aid, appDate, ipc,
-                to_string(binId), to_string(offset), to_string(ti),
-                to_string(ai), to_string(ci), to_string(di));
-    }
-
-    /* for file I/O */
-    friend std::ostream& operator<<(std::ostream& os, const IndexValue& ie);
-    friend std::istream& operator>>(std::istream& is, IndexValue& ie);
-};
-
 
 class IndexEntry : public std::pair<IndexKey, IndexValue*>, public Stringifiable {
 public:
@@ -388,73 +209,6 @@ extern void ConvertToDataRecordCType(DataRecordCType* drct, DataRecord* dataReco
 
 //#endif
 
-/* used to interpret & copy-out records stored in data file buffers */
-struct DataRecord {
-    /* read only attributes */
-    uint32_t size = 0;
-    uint32_t ts = 0, as = 0, cs = 0, ds = 0;
-    const std::string* title = nullptr;
-    const std::string* abstract = nullptr;
-    const std::string* claim = nullptr;
-    const std::string* description = nullptr;
-
-    DataRecord() = default;
-
-    DataRecord(
-            uint32_t _size,
-            uint32_t _ts,
-            uint32_t _as,
-            uint32_t _cs,
-            uint32_t _ds,
-            const char* _title,
-            const char*_abstract,
-            const char* _claim,
-            const char* _description) :
-            size(_size),
-            ts(_ts),
-            as(_as),
-            cs(_cs),
-            ds(_ds),
-            title(new std::string(_title, _title + _ts)),
-            abstract(new std::string(_abstract, _abstract + _as)),
-            claim(new std::string(_claim, _claim + _cs)),
-            description(new std::string(_description, _description + _ds))
-    { }
-    ~DataRecord()
-    {
-        delete title;
-        delete abstract;
-        delete claim;
-        delete description;
-    }
-
-    /* allow move constructor */
-    DataRecord(DataRecord&& other) noexcept : size(other.size), ts(other.ts),
-            as(other.as), cs(other.cs), ds(other.ds),
-            title(other.title), abstract(other.abstract), claim(other.claim),
-            description(other.description)
-    {
-        /* swap pointers */
-        other.title = nullptr;
-        other.abstract = nullptr;
-        other.claim = nullptr;
-        other.description = nullptr;
-    }
-
-    /* disable copy constructor */
-    DataRecord(const DataRecord&) = delete;
-
-    /* move assignment */
-    DataRecord& operator=(DataRecord&& other) noexcept;
-
-    friend std::ostream& operator<<(std::ostream& os, const DataRecord& dataRecord);
-};
-
-struct IdDataRecord {
-    std::string pid;
-    std::string aid;
-    DataRecord dataRecord;
-};
 
 
 /* Data table data layout
