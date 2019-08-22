@@ -41,7 +41,7 @@ sudo apt-get install libpugixml-dev
 ```
 This will install and automatically add pugixml library to the default C++ include path
 
-#### Compilation
+### Compilation
 Inside the `PatentTagging/tools` directory, run 
 ```sh
 cmake -DCMAKE_BUILD_TYPE=Release .
