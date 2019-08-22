@@ -21,6 +21,8 @@ swig_add_library(
         SOURCES DatabaseQueryPython.i ${SWIG_WRAPPER_SRC_DIR}/DatabaseQueryWrapper.cpp ${SWIG_CPP_SRC_DIR}/src/DataTypes.cpp
 )
 
+set_property(TARGET DatabaseQueryPython PROPERTY SWIG_COMPILE_OPTIONS -debug-doxygen-parser -doxygen -fastproxy -olddefs)
+
 target_include_directories(
         DatabaseQueryPython PRIVATE
         /usr/include/python3.6

@@ -16,10 +16,10 @@ struct DataRecord : Stringifiable {
     /* read only attributes */
     uint32_t size = 0;
     uint32_t ts = 0, as = 0, cs = 0, ds = 0;
-    const std::string* title = nullptr;
-    const std::string* abstract = nullptr;
-    const std::string* claim = nullptr;
-    const std::string* description = nullptr;
+    std::string title = "";
+    std::string abstract = "";
+    std::string claim = "";
+    std::string description = "";
 
     DataRecord() = default;
 
@@ -38,31 +38,19 @@ struct DataRecord : Stringifiable {
             as(_as),
             cs(_cs),
             ds(_ds),
-            title(new std::string(_title, _title + _ts)),
-            abstract(new std::string(_abstract, _abstract + _as)),
-            claim(new std::string(_claim, _claim + _cs)),
-            description(new std::string(_description, _description + _ds))
+            title(_title, _title + _ts),
+            abstract(_abstract, _abstract + _as),
+            claim(_claim, _claim + _cs),
+            description(_description, _description + _ds)
     { }
-    ~DataRecord()
-    {
-        delete title;
-        delete abstract;
-        delete claim;
-        delete description;
-    }
 
     /* allow move constructor */
-    DataRecord(DataRecord&& other) noexcept : size(other.size), ts(other.ts),
-                                              as(other.as), cs(other.cs), ds(other.ds),
-                                              title(other.title), abstract(other.abstract), claim(other.claim),
-                                              description(other.description)
-    {
-        /* swap pointers */
-        other.title = nullptr;
-        other.abstract = nullptr;
-        other.claim = nullptr;
-        other.description = nullptr;
-    }
+    DataRecord(DataRecord&& other) noexcept :
+            size(other.size), ts(other.ts),
+            as(other.as), cs(other.cs), ds(other.ds),
+            title(std::move(other.title)), abstract(std::move(other.abstract)),
+            claim(std::move(other.claim)), description(std::move(other.description))
+    { }
 
     /* disable copy constructor */
     DataRecord(const DataRecord&) = delete;
@@ -70,19 +58,16 @@ struct DataRecord : Stringifiable {
     /* move assignment */
     DataRecord& operator=(DataRecord&& other) noexcept;
 
+    /* disable copy assigment */
     DataRecord& operator=(DataRecord&) = delete;
 
     inline std::string stringify() const final
     {
-        if (!title || !abstract ||
-            !claim || !description)
-            return "empty data record";
-
         return ConcatStringWithDelimiter("\n",
-                "<(title)>: " + *title,
-                "<(abstract)>: " + *abstract,
-                "<(claim)>: " + *claim,
-                "<(description)>: " + *description);
+                "<(title)>: " + title,
+                "<(abstract)>: " + abstract,
+                "<(claim)>: " + claim,
+                "<(description)>: " + description);
     }
 
     friend std::ostream& operator<<(std::ostream& os, const DataRecord& dataRecord);
@@ -91,9 +76,9 @@ struct DataRecord : Stringifiable {
 struct IndexValue : public Stringifiable {
 
     inline static const std::string header = ConcatStringWithDelimiter("\t",
-                                                                       "Publication ID", "Application ID", "Application Date",
-                                                                       "Classification IPC", "Bin ID", "Offset", "Title Index",
-                                                                       "Abstract Index", "Claim Index", "Description Index");
+            "Publication ID", "Application ID", "Application Date",
+            "Classification IPC", "Bin ID", "Offset", "Title Index",
+            "Abstract Index", "Claim Index", "Description Index");
 
     std::string                 pid, aid, appDate, ipc;
     uint32_t                    binId, ti, ai, ci, di;
@@ -108,12 +93,6 @@ struct IndexValue : public Stringifiable {
                                          to_string(ai), to_string(ci), to_string(di));
     }
 
-//    IndexValue& operator=(const IndexValue&)
-//    {
-//        std::cout << "copy assignment called\n";
-//
-//        return *this;
-//    }
 
     /* for file I/O */
     friend std::ostream& operator<<(std::ostream& os, const IndexValue& ie);

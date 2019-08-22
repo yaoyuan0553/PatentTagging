@@ -4,18 +4,35 @@
 "generated database binary files by DatabaseGenerator"
 %enddef
 
-%module(py3=1, docstring=DOCSTRING, doxygen=1) DatabaseQuerySelectorPython
-%{
-#include "DatabaseQueryWrapper.h"
-#include "DataBasicTypes.h"
-%}
-
 %include "std_string.i"
 %include "std_vector.i"
 %include "std_shared_ptr.i"
 %include "carrays.i"
 %include "cpointer.i"
 %include "typemaps.i"
+
+
+%shared_ptr(IdDataRecord);
+
+/* make IndexValue a read-only class */
+%immutable IndexValue::pid;
+%immutable IndexValue::aid;
+%immutable IndexValue::appDate;
+%immutable IndexValue::ipc;
+%immutable IndexValue::binId;
+%immutable IndexValue::ti;
+%immutable IndexValue::ai;
+%immutable IndexValue::ci;
+%immutable IndexValue::di;
+%immutable IndexValue::offset;
+
+
+%module(py3=1, docstring=DOCSTRING, doxygen=true) DatabaseQuerySelectorPython
+%{
+#include "DatabaseQueryWrapper.h"
+#include "DataBasicTypes.h"
+%}
+
 
 %feature("autodoc", "3");
 %apply unsigned int { uint32_t };
@@ -27,19 +44,11 @@
 %array_class(int, IntArray);
 
 namespace std {
-    %apply const string& {const string* title,
-                               const string* abstract,
-                               const string* claim,
-                               const string* description};
-    %template(StringArray) vector<string>;
-    %template(IndexValuePtrArray) vector<IndexValue*>;
-    %template(IdDataRecordSharedPtr) shared_ptr<IdDataRecord>;
-    %shared_ptr(IdDataRecord)
-    %template(IdDataRecordArray) vector<shared_ptr<IdDataRecord>>;
-//    %template(IdDataRecordArray) vector<IdDataRecord*>;
+    %template(StringVector) vector<string>;
 
-    %apply IdDataRecord { shared_ptr<IdDataRecord>* };
-    %apply IdDataRecord { IdDataRecordSharedPtr* };
+    %template(IndexValueVector) vector<IndexValue*>;
+
+    %template(IdDataRecordVector) std::vector<std::shared_ptr<IdDataRecord>>;
 };
 
 %include "DatabaseQueryWrapper.h"

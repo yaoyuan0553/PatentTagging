@@ -308,51 +308,55 @@ bool DataRecordFile::GetDataRecordAtOffset(uint64_t offset, IdDataRecordCType* d
 }
 
 
-//bool DataRecordFile::GetDataRecordAtOffset(uint64_t offset, DataRecord* dataRecord) const
-//{
-//    if (offset > nBytesWritten_) {
-//        fprintf(stderr, "%s: offset %lu exceeds file [prefix_%u.bin] with %lu B\n",
-//                __FUNCTION__, offset, binId_, nBytesWritten_);
-//        return false;
-//    }
-//
-///* to check if an increment of the pointer exceeds the boundary of the file */
-//#define INCR_AND_CHECK(sz)                                                          \
-//    do {                                                                            \
-//        curBuf += sz;                                                               \
-//        if ((uint64_t)(curBuf - buf_) > nBytesWritten_) {                           \
-//        fprintf(stderr, "%s: offset %lu exceeds file [prefix_%u.bin] with %lu B\n", \
-//                    __FUNCTION__, curBuf - buf_, binId_, nBytesWritten_);           \
-//            return false;                                                           \
-//        }                                                                           \
-//    } while (0)
-//
-//    const char* curBuf = buf_ + offset;
-//    auto* size = (uint32_t*)curBuf;
-//    INCR_AND_CHECK(sizeof(uint32_t));
-//
-//#define GET_SIZE_AND_STR(sz, str)           \
-//    uint32_t* sz;                           \
-//    const char* str;                        \
-//    do {                                    \
-//        sz = (uint32_t*)curBuf;             \
-//        INCR_AND_CHECK(sizeof(uint32_t));   \
-//        str = curBuf;                       \
-//        INCR_AND_CHECK(*sz);                \
-//    } while(0)
-//
-//    GET_SIZE_AND_STR(ts, title);
-//    GET_SIZE_AND_STR(as, abstract);
-//    GET_SIZE_AND_STR(cs, claim);
-//    GET_SIZE_AND_STR(ds, description);
-//
-//    *dataRecord = DataRecord(*size, *ts, *as, *cs, *ds, title, abstract, claim, description);
-//
-//#undef GET_SIZE_AND_STR
-//#undef INCR_AND_CHECK
-//
-//    return true;
-//}
+/*
+bool DataRecordFile::GetDataRecordAtOffset(uint64_t offset, DataRecord* dataRecord) const
+{
+    if (offset > nBytesWritten_) {
+        fprintf(stderr, "%s: offset %lu exceeds file [prefix_%u.bin] with %lu B\n",
+                __FUNCTION__, offset, binId_, nBytesWritten_);
+        return false;
+    }
+
+*/
+/* to check if an increment of the pointer exceeds the boundary of the file *//*
+
+#define INCR_AND_CHECK(sz)                                                          \
+    do {                                                                            \
+        curBuf += sz;                                                               \
+        if ((uint64_t)(curBuf - buf_) > nBytesWritten_) {                           \
+        fprintf(stderr, "%s: offset %lu exceeds file [prefix_%u.bin] with %lu B\n", \
+                    __FUNCTION__, curBuf - buf_, binId_, nBytesWritten_);           \
+            return false;                                                           \
+        }                                                                           \
+    } while (0)
+
+    const char* curBuf = buf_ + offset;
+    auto* size = (uint32_t*)curBuf;
+    INCR_AND_CHECK(sizeof(uint32_t));
+
+#define GET_SIZE_AND_STR(sz, str)           \
+    uint32_t* sz;                           \
+    const char* str;                        \
+    do {                                    \
+        sz = (uint32_t*)curBuf;             \
+        INCR_AND_CHECK(sizeof(uint32_t));   \
+        str = curBuf;                       \
+        INCR_AND_CHECK(*sz);                \
+    } while(0)
+
+    GET_SIZE_AND_STR(ts, title);
+    GET_SIZE_AND_STR(as, abstract);
+    GET_SIZE_AND_STR(cs, claim);
+    GET_SIZE_AND_STR(ds, description);
+
+    *dataRecord = DataRecord(*size, *ts, *as, *cs, *ds, title, abstract, claim, description);
+
+#undef GET_SIZE_AND_STR
+#undef INCR_AND_CHECK
+
+    return true;
+}
+*/
 
 
 void IndexTable::readFromFile(const char* filename)
@@ -442,17 +446,10 @@ istream& operator>>(std::istream& is, IndexValue& ie)
 
 std::ostream& operator<<(std::ostream& os, const DataRecord& dataRecord)
 {
-    /* empty if any of them is null */
-    if (!dataRecord.title || !dataRecord.abstract ||
-            !dataRecord.claim || !dataRecord.description) {
-        os << "empty data record";
-        return os;
-    }
-
-    os << "<(title)>: " << *dataRecord.title << '\n' <<
-        "<(abstract)>: " << *dataRecord.abstract << '\n' <<
-        "<(claim)>: " << *dataRecord.claim << '\n' <<
-        "<(description)>: " << *dataRecord.description;
+    os << "<(title)>: " << dataRecord.title << '\n' <<
+        "<(abstract)>: " << dataRecord.abstract << '\n' <<
+        "<(claim)>: " << dataRecord.claim << '\n' <<
+        "<(description)>: " << dataRecord.description;
 
     return os;
 }
@@ -460,22 +457,19 @@ std::ostream& operator<<(std::ostream& os, const DataRecord& dataRecord)
 DataRecord& DataRecord::operator=(DataRecord&& other) noexcept
 {
 #define COPY_MEM(member) member = other.member
-#define DELETE_COPY_MEM_AND_NULL(member)    \
-        delete member;                      \
-        COPY_MEM(member);                   \
-        other.member = nullptr
+#define MOVE_MEM(member) member = std::move(other.member)
 
     COPY_MEM(size);
     COPY_MEM(ts);
     COPY_MEM(as);
     COPY_MEM(cs);
     COPY_MEM(ds);
-    DELETE_COPY_MEM_AND_NULL(title);
-    DELETE_COPY_MEM_AND_NULL(abstract);
-    DELETE_COPY_MEM_AND_NULL(claim);
-    DELETE_COPY_MEM_AND_NULL(description);
+    MOVE_MEM(title);
+    MOVE_MEM(abstract);
+    MOVE_MEM(claim);
+    MOVE_MEM(description);
 
-#undef DELETE_COPY_MEM_AND_NULL
+#undef MOVE_MEM
 #undef COPY_MEM
 
     return *this;
@@ -486,9 +480,9 @@ void ConvertToDataRecordCType(DataRecordCType* drct, DataRecord* dataRecord)
 #define COPY_FIELDS(field) drct->field = dataRecord->field
 #define MEM_COPY_FIELDS(field)                                  \
     do {                                                        \
-        auto len = dataRecord->field->size();                   \
+        auto len = dataRecord->field.size();                    \
         drct->field = (char*)malloc(len+1);                     \
-        memcpy(drct->field, dataRecord->field->c_str(), len);   \
+        memcpy(drct->field, dataRecord->field.c_str(), len);    \
         drct->field[len] = 0;                                   \
     } while (0)
 
@@ -498,10 +492,6 @@ void ConvertToDataRecordCType(DataRecordCType* drct, DataRecord* dataRecord)
     COPY_FIELDS(cs);
     COPY_FIELDS(ds);
 
-//    drct->title = *dataRecord->title;
-//    drct->abstract = *dataRecord->abstract;
-//    drct->claim = *dataRecord->claim;
-//    drct->description = *dataRecord->description;
 
     MEM_COPY_FIELDS(title);
     MEM_COPY_FIELDS(abstract);

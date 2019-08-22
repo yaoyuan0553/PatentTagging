@@ -134,7 +134,7 @@ void DatabaseQueryManager::getAllId(vector<string>* pidList, vector<string>* aid
 
 bool DatabaseQueryManager::getContentById(const char* id, DataRecord* dataRecord) const
 {
-    IndexValue* iv;
+    const IndexValue* iv;
     if (!(iv = getInfoById(id))) {
         fprintf(stderr, "%s: ID [%s] does not exist in database\n",
                 __FUNCTION__, id);
@@ -149,7 +149,7 @@ bool DatabaseQueryManager::getContentById(const char* id, DataRecord* dataRecord
     return dataRecordFile.GetDataRecordAtOffset(iv->offset, dataRecord);
 }
 
-IndexValue* DatabaseQueryManager::getInfoById(const char* id) const
+const IndexValue* DatabaseQueryManager::getInfoById(const char* id) const
 {
 
     if (pidTable_.find(id) != pidTable_.end()) {
@@ -166,10 +166,10 @@ IndexValue* DatabaseQueryManager::getInfoById(const char* id) const
 }
 
 void DatabaseQueryManager::getInfoByIdList(
-        const std::vector<std::string>& idList, std::vector<IndexValue*>* output) const
+        const std::vector<std::string>& idList, std::vector<const IndexValue*>* output) const
 {
     for (const auto& id : idList) {
-        IndexValue* iv;
+        const IndexValue* iv;
         if (!(iv = getInfoById(id.c_str())))
             continue;
         output->push_back(iv);
@@ -179,7 +179,7 @@ void DatabaseQueryManager::getInfoByIdList(
 void DatabaseQueryManager::getContentByIdList(const vector<string>& idList,
         vector<shared_ptr<IdDataRecord>>* idDataRecordList) const
 {
-    vector<IndexValue*> infoList;
+    vector<const IndexValue*> infoList;
     getInfoByIdList(idList, &infoList);
 
     if (infoList.empty()) {
@@ -187,8 +187,8 @@ void DatabaseQueryManager::getContentByIdList(const vector<string>& idList,
         return;
     }
     /* get all binId of data files needed to be opened */
-    std::unordered_map<uint32_t, std::vector<IndexValue*>> indexByBinId;
-    for (IndexValue* info : infoList) {
+    std::unordered_map<uint32_t, std::vector<const IndexValue*>> indexByBinId;
+    for (const IndexValue* info : infoList) {
         indexByBinId[info->binId].push_back(info);
     }
 //    idDataRecordList->reserve(idList.size());
@@ -202,9 +202,7 @@ void DatabaseQueryManager::getContentByIdList(const vector<string>& idList,
         if (ivList.size() > dataFile.numRecords() / 3)
             dataFile.readFromFileFull(binName.c_str());
 
-        cerr << ivList.size() << '\n';
-
-        for (IndexValue* iv : ivList) {
+        for (const IndexValue* iv : ivList) {
             idDataRecordList->emplace_back(new IdDataRecord);
             if (!dataFile.GetDataRecordAtOffset(iv->offset,
                     &idDataRecordList->back()->dataRecord))

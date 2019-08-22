@@ -47,7 +47,9 @@ void waitForThread(std::thread* t);
 
 
 
+
 class DatabaseQueryManager {
+
     const std::string indexFilename_;
     const std::string dataPath_;
     const std::string dataFilePrefix_;
@@ -59,6 +61,13 @@ class DatabaseQueryManager {
 
 public:
 
+    /**
+     * @brief constructs a singleton DatabaseQueryManager instance
+     *
+     * @param indexFilename     path to the index file (index.tsv)
+     * @param dataPath          path to the directory containing database binaries (data/)
+     * @param dataFilePrefix    prefix name of database binary files (patent-data)
+     */
     DatabaseQueryManager(
             const char* indexFilename,
             const char* dataPath,
@@ -78,10 +87,10 @@ public:
      * @return      corresponding index record if found,
      *              if not found returns nullptr
      */
-    IndexValue* getInfoById(const char* id) const;
+    const IndexValue* getInfoById(const char* id) const;
 
     void getInfoByIdList(const std::vector<std::string>& idList,
-            std::vector<IndexValue*>* output) const;
+            std::vector<const IndexValue*>* output) const;
 
     void getAllId(std::vector<std::string>* pidList = nullptr,
             std::vector<std::string>* aidList = nullptr) const;
@@ -91,12 +100,6 @@ public:
     void getContentByIdList(const std::vector<std::string>& idList,
             std::vector<std::shared_ptr<IdDataRecord>>* idDataRecordList) const;
 };
-
-
-
-
-
-
 
 
 
