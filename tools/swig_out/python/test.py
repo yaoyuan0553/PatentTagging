@@ -22,6 +22,8 @@ miniPidList = dq.StringVector([pidList[0], pidList[1], pidList[2]])
 
 print(miniPidList.size())
 
+# dr = dqm.getContentById
+
 idDrList = dq.IdDataRecordVector()
 
 dqm.getContentByIdList(miniPidList, idDrList)
@@ -55,12 +57,15 @@ print(indexValue.stringify())
 
 iv2 = dqm.getInfoById(pidList[0])
 
+
 print("\nafter modify")
 print("indexValue = %s" % indexValue.stringify())
 
 print("iv2 = %s" % iv2.stringify())
 
-# sample usage of a fast batch querying program
+# IdDataRecord* allocated by new does get correctly freed
+# sample usage of a fast batch querying program for saving
+# memory while keeping performance
 with tqdm.tqdm(total=pidList.size()) as t:
     batch = 1024 * 32
     i = 0

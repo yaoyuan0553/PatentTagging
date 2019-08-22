@@ -27,14 +27,13 @@
 %immutable IndexValue::offset;
 
 
-%module(py3=1, docstring=DOCSTRING, doxygen=true) DatabaseQuerySelectorPython
+%module(docstring=DOCSTRING) DatabaseQuerySelectorPython
 %{
 #include "DatabaseQueryWrapper.h"
 #include "DataBasicTypes.h"
 %}
 
 
-%feature("autodoc", "3");
 %apply unsigned int { uint32_t };
 %apply unsigned long { uint64_t };
 
