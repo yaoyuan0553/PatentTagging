@@ -12,7 +12,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 add_executable(DatabaseGenerator src/main.cpp src/DataTypes.cpp include/DataTypes.h
         include/XpathQueryCollection/2004.cpp include/XpathQueryCollection/2005.cpp include/XpathQueryCollection/2019.cpp
         include/XpathQueryCollection.cpp
-        src/DataAndIndexGeneratorThread.cpp include/DataAndIndexGeneratorThread.h src/DatabaseFileWriterThread.cpp include/DatabaseFileWriterThread.h include/Helper.h src/DatabaseQueryManager.cpp include/DatabaseQueryManager.h)
+        src/DataAndIndexGeneratorThread.cpp include/DataAndIndexGeneratorThread.h src/DatabaseFileWriterThread.cpp include/DatabaseFileWriterThread.h include/Helper.h src/DatabaseQueryManager.cpp include/DatabaseQueryManager.h ../shared/include/XmlFile.h ../shared/include/XmlErrorFile.h)
 add_library(DatabaseQuerySelector SHARED src/DatabaseQuerySelector.cpp src/DatabaseQueryManager.cpp)
 add_executable(DatabaseQuerySelectorExe src/DatabaseQuerySelector.cpp src/DatabaseQueryManager.cpp src/DataTypes.cpp)
 

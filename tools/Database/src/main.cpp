@@ -244,47 +244,48 @@ class XpathIPOTagTester : public XmlBufferXpathIPOTagTextPrinterTester {
     ISC_STRING(CLAIM) = "claim";
     ISC_STRING(DESCRIPTION) = "description";
 
+
     void initializeQuery2019()
     {
         using namespace std;
 
-        xpathQueryTextFormatterDict_.add<XpathIdQuery>(
+        xpathQueryTextFormatterDict_.add<XpathIdQuery2019>(
                 PID, "//publication-reference",
                 vector<XpathQueryString>{".//country", ".//doc-number", ".//kind"}
         );
 
-        xpathQueryTextFormatterDict_.add<XpathIdQuery>(
+        xpathQueryTextFormatterDict_.add<XpathIdQuery2019>(
                 AID, "//application-reference",
                 vector<XpathQueryString>{".//country", ".//doc-number"}
         );
 
-        xpathQueryTextFormatterDict_.add<XpathDateQuery>(
+        xpathQueryTextFormatterDict_.add<XpathDateQuery2019>(
                 PUB_DATE, "//publication-reference",
                 vector<XpathQueryString>{".//date"}
         );
 
-        xpathQueryTextFormatterDict_.add<XpathDateQuery>(
+        xpathQueryTextFormatterDict_.add<XpathDateQuery2019>(
                 APP_DATE, "//application-reference",
                 vector<XpathQueryString>{".//date"}
         );
 
-        xpathQueryTextFormatterDict_.add<XpathIpcQuery>(
+        xpathQueryTextFormatterDict_.add<XpathIpcQuery2019>(
                 IPC, ".//classification-ipcr"
         );
 
-        xpathQueryTextFormatterDict_.add<XpathTitleQuery>(
+        xpathQueryTextFormatterDict_.add<XpathTitleQuery2019>(
                 TITLE, "//invention-title"
         );
 
-        xpathQueryTextFormatterDict_.add<XpathAbstractQuery>(
+        xpathQueryTextFormatterDict_.add<XpathAbstractQuery2019>(
                 ABSTRACT, "//abstract"
         );
 
-        xpathQueryTextFormatterDict_.add<XpathClaimQuery>(
+        xpathQueryTextFormatterDict_.add<XpathClaimQuery2019>(
                 CLAIM, "//claim"
         );
 
-        xpathQueryTextFormatterDict_.add<XpathDescriptionQuery>(
+        xpathQueryTextFormatterDict_.add<XpathDescriptionQuery2019>(
                 DESCRIPTION, "//description"
         );
     }
@@ -295,6 +296,7 @@ class XpathIPOTagTester : public XmlBufferXpathIPOTagTextPrinterTester {
 //        xpathQueryTextFormatterDict_.add<XpathSingleQueryGreedyNoExtraSpaceInnerText>(
 //                "claimText", XpathQueryString("//claim-text")
 //                );
+        using namespace std;
         xpathQueryTextFormatterDict_.add<XpathIdQuery2005>(
                 PID, "//publication-reference",
                 vector<XpathQueryString>{".//country", ".//doc-number", ".//kind"}
@@ -342,6 +344,7 @@ class XpathIPOTagTester : public XmlBufferXpathIPOTagTextPrinterTester {
 //        xpathQueryTextFormatterDict_.add<XpathSingleQueryGreedyNoExtraSpaceInnerText>(
 //                "claimText", XpathQueryString("//claim-text")
 //                );
+        using namespace std;
         xpathQueryTextFormatterDict_.add<XpathIdQuery2004>(
                 PID, "//subdoc-bibliographic-information",
                 vector<XpathQueryString>{".//correspondence-address//country-code", "./document-id/doc-number", ".//kind-code"}
@@ -394,7 +397,7 @@ public:
                     outputFilename, nReaders, nProcessors) { }
 };
 
-#define MODEL3
+#define MODEL4
 
 #if defined(MODEL2)
 struct Usage {
@@ -493,15 +496,15 @@ int main(int argc, char* argv[])
         Usage::printAndExit(argv[0]);
 
 
-    XpathIPOTagTester tagTester(argv[1], argv[2], atoi(argv[3]), atoi(argv[4]));
-
-    tagTester.process();
+//    XpathIPOTagTester tagTester(argv[1], argv[2], atoi(argv[3]), atoi(argv[4]));
+//
+//    tagTester.process();
 //    testDataRecordFile();
 
-//    DatabaseGenerator databaseGenerator(argv[1], argv[2], argv[3],
-//            atoi(argv[4]), atoi(argv[5]));
+    DatabaseGenerator databaseGenerator(argv[1], argv[2], argv[3],
+            atoi(argv[4]), atoi(argv[5]));
 
-//    databaseGenerator.process();
+    databaseGenerator.process();
 
 //    testDatabaseQuery(argc, argv);
 

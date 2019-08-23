@@ -10,11 +10,18 @@
 #include "CQueue.h"
 #include "XpathQueryTextFormatter.h"
 #include "DataTypes.h"
+#include "XmlErrorFile.h"
+#include "XmlFile.h"
+
+#include <atomic>
 
 
 class DataAndIndexGeneratorThread :
-        public InputOutputThreadInterface<CQueue<std::pair<char*, size_t>>,
+        public InputOutputThreadInterface<CQueue<XmlFile>,
                 CQueue<DataRecordFile*>> {
+
+    /* accumulate number of threads running */
+    inline static std::atomic_int nRunning = 0;
 
     XpathQueryTextFormatterDict xpathQueryTextFormatterDict_;
     /* WARNING: all memory allocated here has to be released by caller */
@@ -26,9 +33,15 @@ class DataAndIndexGeneratorThread :
 
     void internalRun() final;
 
+    inline static ConcurrentQueue<XmlErrorFile> errorFileQueue = ConcurrentQueue<XmlErrorFile>();
+    /* runs this after the last thread finishes */
+    void writeErrorFileToFile() const;
+
 public:
+
+
     explicit DataAndIndexGeneratorThread(
-            CQueue<std::pair<char*, size_t>>& inputQueue,
+            CQueue<XmlFile>& inputQueue,
             CQueue<DataRecordFile*>& outputQueue,
             const XpathQueryTextFormatterDict& xpathQueryTextFormatterDict,
             const std::vector<std::string>& dataTextKeys,

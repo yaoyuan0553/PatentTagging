@@ -52,7 +52,7 @@ public:
 
 
 /* Title  is just a simple default query */
-using XpathTitleQuery = XpathSingleQueryDefaultInnerText;
+using XpathTitleQuery2019 = XpathSingleQueryDefaultInnerText;
 
 class XpathAbstractQuery2019 : public XpathQueryTextFormatter {
     ExhaustiveChildWalker walker_;

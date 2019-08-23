@@ -11,11 +11,13 @@
 
 #include "ThreadModelInterface.h"
 #include "CQueue.h"
+#include "XmlFile.h"
+
 
 class FileReaderThread :
         public IOThreadInterface<ConcurrentQueue<std::string>,
-                CQueue<std::pair<char*, size_t>>> {
-    std::vector<std::pair<char*, size_t>> batchOutput_;
+                CQueue<XmlFile>> {
+    std::vector<XmlFile> batchOutput_;
 
     void internalRun() final;
 
@@ -27,8 +29,8 @@ class FileReaderThread :
 
 public:
     FileReaderThread(InputType& filenameQueue,
-            OutputType& bufferQueue, int batchSize = 128) :
-            InputOutputThreadInterface(filenameQueue, bufferQueue, batchSize)
+            OutputType& xmlFileQueue, int batchSize = 128) :
+            InputOutputThreadInterface(filenameQueue, xmlFileQueue, batchSize)
     {
         batchOutput_.reserve(batchSize_);
     }
