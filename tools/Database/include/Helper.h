@@ -103,6 +103,28 @@ namespace Details
     };
 }
 
+/********************************/
+/*    abstract interface types  */
+/********************************/
+
+struct Stringifiable {
+    virtual std::string stringify() const = 0;
+    virtual ~Stringifiable() = default;
+};
+
+struct FileReadable {
+    virtual void readFromFile(const char* filename) = 0;
+    virtual ~FileReadable() = default;
+};
+
+struct FileWritable {
+    virtual void writeToFile(const char* filename) = 0;
+    virtual ~FileWritable() = default;
+};
+
+struct FileReadWritable : public FileReadable, public FileWritable {
+    ~FileReadWritable() override = default;
+};
 
 /**
  * @brief

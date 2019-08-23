@@ -12,8 +12,9 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 add_executable(DatabaseGenerator src/main.cpp src/DataTypes.cpp include/DataTypes.h
         include/XpathQueryCollection/2004.cpp include/XpathQueryCollection/2005.cpp include/XpathQueryCollection/2019.cpp
         include/XpathQueryCollection.cpp
-        src/DataAndIndexGeneratorThread.cpp include/DataAndIndexGeneratorThread.h src/DatabaseFileWriterThread.cpp include/DatabaseFileWriterThread.h include/Helper.h src/DatabaseQueryManager.cpp include/DatabaseQueryManager.h ../shared/include/XmlFile.h ../shared/include/XmlErrorFile.h)
+        src/DataAndIndexGeneratorThread.cpp include/DataAndIndexGeneratorThread.h src/DatabaseFileWriterThread.cpp include/DatabaseFileWriterThread.h include/Helper.h src/DatabaseQueryManager.cpp include/DatabaseQueryManager.h)
 add_library(DatabaseQuerySelector SHARED src/DatabaseQuerySelector.cpp src/DatabaseQueryManager.cpp)
+
 add_executable(DatabaseQuerySelectorExe src/DatabaseQuerySelector.cpp src/DatabaseQueryManager.cpp src/DataTypes.cpp)
 
 target_include_directories(DatabaseGenerator PRIVATE
@@ -40,3 +41,8 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 target_link_libraries(DatabaseGenerator XmlSharedTools)
 target_link_libraries(DatabaseQuerySelector XmlSharedTools)
 target_link_libraries(DatabaseQuerySelectorExe XmlSharedTools)
+
+
+# custom variable for swig wrappers
+set(SWIG_CPP_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+add_subdirectory(SwigWrapper)

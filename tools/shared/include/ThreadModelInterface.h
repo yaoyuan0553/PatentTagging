@@ -44,7 +44,7 @@ protected:
      * outputData_ could slow down performance */
     const int batchSize_;
 
-    explicit OutputThreadInterface(OutputType& outputData, const int batchSize) :
+    explicit OutputThreadInterface(OutputType& outputData, const int batchSize = 128) :
         outputData_(outputData), batchSize_(batchSize) { }
 };
 
