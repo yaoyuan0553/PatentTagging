@@ -137,6 +137,7 @@ class ContentWriterThread : public InputThreadInterface<
             delete content;
         }
         ofs.close();
+        cerr << "written\n";
     }
 
 public:
@@ -176,8 +177,8 @@ int main(int argc, char* argv[])
             databaseQueryManager, idList);
     ContentWriterThread writeContent(databaseQueryManager.getContentQueue(), argv[4]);
 
-    StatsThread<IdDataRecord*, true> filesWritten(
-            databaseQueryManager.getContentQueue(), idList.size());
+    StatsThread<IdDataRecord*, false> filesWritten(
+            databaseQueryManager.getContentQueue());
 
     readContent.run();
     writeContent.run();
@@ -185,6 +186,7 @@ int main(int argc, char* argv[])
 
     readContent.wait();
     databaseQueryManager.getContentQueue().setQuitSignal();
+
     writeContent.wait();
     filesWritten.wait();
 
