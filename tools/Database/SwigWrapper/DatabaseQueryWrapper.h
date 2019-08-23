@@ -113,7 +113,10 @@ public:
             std::vector<std::string>* aidList = nullptr) const;
 
     /**
-     * @brief retrieves a parsed XML text body with a given PID or AID
+     * @brief retrieves a single parsed XML text body with a given PID or AID
+     * @warning this method is meant for single queries only. For a collection of
+     *          PIDs or AIDs, if this method is called frequently, it'll be
+     *          extremely inefficient. Please use getContentByIdList instead
      * @param id            INPUT: PID or AID
      * @param dataRecord    OUTPUT: retrieved dataRecord, null if not found
      * @return              true if found, false if not found
