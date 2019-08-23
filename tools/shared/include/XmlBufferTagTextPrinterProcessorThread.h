@@ -9,9 +9,10 @@
 #include "ThreadModelInterface.h"
 #include "CQueue.h"
 #include "XpathQueryTextFormatter.h"
+#include "XmlFile.h"
 
 class XmlBufferTagTextPrinterProcessorThread :
-        public InputOutputThreadInterface<CQueue<std::pair<char*, size_t>>,
+        public InputOutputThreadInterface<CQueue<XmlFile>,
                 CQueue<std::string*>> {
 
     std::vector<std::string*> batchOutput_;
@@ -28,7 +29,7 @@ class XmlBufferTagTextPrinterProcessorThread :
 
 public:
     explicit XmlBufferTagTextPrinterProcessorThread(
-            CQueue<std::pair<char*, size_t>>& inputQueue,
+            CQueue<XmlFile>& inputQueue,
             CQueue<std::string*>& outputQueue,
             const XpathQueryTextFormatterDict& xpathQueryTextFormatterDict,
             int batchSize = 128) :

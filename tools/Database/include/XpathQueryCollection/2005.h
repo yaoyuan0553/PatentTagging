@@ -3,8 +3,8 @@
 //
 
 #pragma once
-#ifndef TOOLS_XpathQueryTextFormatter_H
-#define TOOLS_XpathQueryTextFormatter_H
+#ifndef TOOLS_2005_H
+#define TOOLS_2005_H
 
 #include <vector>
 
@@ -12,15 +12,15 @@
 
 
 /* query for publication id and application id */
-class XpathIdQuery : public XpathQueryTextFormatter {
+class XpathIdQuery2005 : public XpathQueryTextFormatter {
     XpathQuery idRootQuery_;
     std::vector<XpathQuery> idNodeQueryList_;
 public:
     std::string operator()(pugi::xml_node& root) override;
 
-    DEFINE_DEFAULT_CLONE(XpathIdQuery);
+    DEFINE_DEFAULT_CLONE(XpathIdQuery2005);
 
-    XpathIdQuery(const XpathQueryString& rootNodeQueryStr,
+    XpathIdQuery2005(const XpathQueryString& rootNodeQueryStr,
             const std::vector<XpathQueryString>& idNodeQueryStrList) :
             idRootQuery_(rootNodeQueryStr)
     {
@@ -31,56 +31,55 @@ public:
 };
 
 /* query for publication date and application date */
-using XpathDateQuery = XpathIdQuery;
+using XpathDateQuery2005 = XpathIdQuery2005;
 
 /* query for publication id and application id */
-class XpathIpcQuery : public XpathQueryTextFormatter {
+class XpathIpcQuery2005 : public XpathQueryTextFormatter {
     XpathQuery ipcNodesQuery_;
     XpathQuery subNodesQuery_;
     inline static constexpr char queryStr[] =
-        ".//section | .//class | .//subclass | .//main-group | "
-        ".//subgroup";
+        ".//main-classification | .//further-classification";
 public:
     std::string operator()(pugi::xml_node& root) override;
 
-    DEFINE_DEFAULT_CLONE(XpathIpcQuery);
+    DEFINE_DEFAULT_CLONE(XpathIpcQuery2005);
 
-    explicit XpathIpcQuery(const XpathQueryString& rootNodeQueryStr) :
+    explicit XpathIpcQuery2005(const XpathQueryString& rootNodeQueryStr) :
             ipcNodesQuery_(rootNodeQueryStr),
             subNodesQuery_(queryStr) { }
 };
 
 
 /* Title  is just a simple default query */
-using XpathTitleQuery = XpathSingleQueryDefaultInnerText;
+using XpathTitleQuery2005 = XpathSingleQueryDefaultInnerText;
 
-class XpathAbstractQuery : public XpathQueryTextFormatter {
+class XpathAbstractQuery2005 : public XpathQueryTextFormatter {
     ExhaustiveChildWalker walker_;
     XpathQuery paragraphQuery_;
     XpathQuery abstractQuery_;
 public:
     std::string operator()(pugi::xml_node& root) override;
 
-    DEFINE_DEFAULT_CLONE(XpathAbstractQuery);
+    DEFINE_DEFAULT_CLONE(XpathAbstractQuery2005);
 
-    explicit XpathAbstractQuery(const XpathQueryString& rootNodeQueryStr) :
+    explicit XpathAbstractQuery2005(const XpathQueryString& rootNodeQueryStr) :
             paragraphQuery_(".//p"), abstractQuery_(rootNodeQueryStr) { }
 };
 
 
-using XpathDescriptionQuery = XpathAbstractQuery;
+using XpathDescriptionQuery2005 = XpathAbstractQuery2005;
 
 
-class XpathClaimQuery : public XpathQueryTextFormatter {
+class XpathClaimQuery2005 : public XpathQueryTextFormatter {
     ExhaustiveChildWalker walker_;
     XpathQuery claimQuery_;
 public:
     std::string operator()(pugi::xml_node& root) override;
-    DEFINE_DEFAULT_CLONE(XpathClaimQuery);
+    DEFINE_DEFAULT_CLONE(XpathClaimQuery2005);
 
-    explicit XpathClaimQuery(const XpathQueryString& claimNodeQueryStr) :
+    explicit XpathClaimQuery2005(const XpathQueryString& claimNodeQueryStr) :
             claimQuery_(claimNodeQueryStr) { }
 };
 
 
-#endif //TOOLS_XpathQueryTextFormatter_H
+#endif //TOOLS_2005_H

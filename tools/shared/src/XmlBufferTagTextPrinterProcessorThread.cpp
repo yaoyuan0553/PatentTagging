@@ -10,12 +10,12 @@ void XmlBufferTagTextPrinterProcessorThread::internalRun()
 {
     for (uint64_t bN = 0;;)
     {
-        auto [bufBytes, quit] = inputData_.pop();
+        auto [xmlFile, quit] = inputData_.pop();
 
         if (quit) break;
 
         pugi::xml_document doc;
-        doc.load_buffer_inplace_own(bufBytes.first, bufBytes.second);
+        doc.load_buffer_inplace_own(xmlFile.buffer, xmlFile.bufferSize);
 
         // WARNING: must be released by caller
         string* singleOutput = new string;

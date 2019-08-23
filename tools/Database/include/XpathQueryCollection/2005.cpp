@@ -2,14 +2,14 @@
 // Created by yuan on 8/15/19.
 //
 
-#include "XpathQueryCollection.h"
+#include "2005.h"
 
 #include <iostream>
 
 using namespace std;
 
 
-string XpathIdQuery::operator()(pugi::xml_node& root)
+string XpathIdQuery2005::operator()(pugi::xml_node& root)
 {
     pugi::xml_node idRootNode = root.select_node(idRootQuery_.pugiQuery()).node();
 
@@ -25,7 +25,7 @@ string XpathIdQuery::operator()(pugi::xml_node& root)
     return output;
 }
 
-std::string XpathAbstractQuery::operator()(pugi::xml_node& root)
+std::string XpathAbstractQuery2005::operator()(pugi::xml_node& root)
 {
     pugi::xml_node idRootNode = root.select_node(abstractQuery_.pugiQuery()).node();
 
@@ -48,7 +48,7 @@ std::string XpathAbstractQuery::operator()(pugi::xml_node& root)
     return output;
 }
 
-std::string XpathClaimQuery::operator()(pugi::xml_node& root)
+std::string XpathClaimQuery2005::operator()(pugi::xml_node& root)
 {
     pugi::xpath_node_set claimNodes = root.select_nodes(claimQuery_.pugiQuery());
 
@@ -70,26 +70,29 @@ std::string XpathClaimQuery::operator()(pugi::xml_node& root)
     return output;
 }
 
-std::string XpathIpcQuery::operator()(pugi::xml_node& root)
+std::string XpathIpcQuery2005::operator()(pugi::xml_node& root)
 {
     pugi::xpath_node_set ipcNodes = root.select_nodes(ipcNodesQuery_.pugiQuery());
 
     string output;
-
     /* size 5: 0      1             2             3             4
      * .//section | .//class | .//subclass | .//main-group | .//subgroup */
     for (const pugi::xpath_node& ipc : ipcNodes) {
         pugi::xpath_node_set subNodes = ipc.node().select_nodes(subNodesQuery_.pugiQuery());
 
-        if (subNodes.size() != 5) continue;
+        if (subNodes.size() == 0) continue;
 
-        subNodes.sort();
-
-        output += string(subNodes[0].node().text().get()) +
-                subNodes[1].node().text().get() +
-                subNodes[2].node().text().get() + '-' +
-                subNodes[3].node().text().get() + '/' +
-                subNodes[4].node().text().get() + ',';
+//        subNodes.sort();
+        for(const auto i : subNodes){
+            output += string(i.node().text().get()).substr(0,4) + '-' +
+                      string(i.node().text().get()).substr(4)+ ',';
+        }
+//        output += string(subNodes[0].node().text().get());
+//                +
+//                subNodes[1].node().text().get() +
+//                subNodes[2].node().text().get() + '-' +
+//                subNodes[3].node().text().get() + '/' +
+//                subNodes[4].node().text().get() + ',';
     }
     if (!output.empty())
         output.pop_back();

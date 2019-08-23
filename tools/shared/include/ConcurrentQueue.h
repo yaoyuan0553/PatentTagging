@@ -61,6 +61,14 @@ public:
         totalPushedItems_++;
     }
 
+    /* push a single item to the queue */
+    void push(T&& item)
+    {
+        std::lock_guard<decltype(mutex_)> lock(mutex_);
+        queue_.push(std::move(item));
+        totalPushedItems_++;
+    }
+
     /* push a list of items to the queue, batch push*/
     void push(const std::vector<T>& items)
     {

@@ -2,18 +2,16 @@
 // Created by yuan on 8/15/19.
 //
 
-#include "XpathQueryCollection.h"
+#include "2004.h"
 
 #include <iostream>
 
 using namespace std;
 
-
-string XpathIdQuery::operator()(pugi::xml_node& root)
+string XpathIdQuery2004::operator()(pugi::xml_node& root)
 {
     pugi::xml_node idRootNode = root.select_node(idRootQuery_.pugiQuery()).node();
-
-    string output;
+    string output = "US";
 
     for (const XpathQuery& xqs : idNodeQueryList_) {
         auto str = idRootNode.select_node(xqs.pugiQuery()).node().text();
@@ -22,10 +20,10 @@ string XpathIdQuery::operator()(pugi::xml_node& root)
         output += str.get();
     }
 
-    return output;
+    return output == "US" ? "" : output;
 }
 
-std::string XpathAbstractQuery::operator()(pugi::xml_node& root)
+std::string XpathAbstractQuery2004::operator()(pugi::xml_node& root)
 {
     pugi::xml_node idRootNode = root.select_node(abstractQuery_.pugiQuery()).node();
 
@@ -48,7 +46,7 @@ std::string XpathAbstractQuery::operator()(pugi::xml_node& root)
     return output;
 }
 
-std::string XpathClaimQuery::operator()(pugi::xml_node& root)
+std::string XpathClaimQuery2004::operator()(pugi::xml_node& root)
 {
     pugi::xpath_node_set claimNodes = root.select_nodes(claimQuery_.pugiQuery());
 
@@ -70,26 +68,30 @@ std::string XpathClaimQuery::operator()(pugi::xml_node& root)
     return output;
 }
 
-std::string XpathIpcQuery::operator()(pugi::xml_node& root)
+std::string XpathIpcQuery2004::operator()(pugi::xml_node& root)
 {
     pugi::xpath_node_set ipcNodes = root.select_nodes(ipcNodesQuery_.pugiQuery());
 
     string output;
-
-    /* size 5: 0      1             2             3             4
-     * .//section | .//class | .//subclass | .//main-group | .//subgroup */
+    /*  <classification-ipc>
+     *  <classification-ipc-primary>
+     *  <ipc>G04B019/20</ipc>
+     *  </classification-ipc-primary>
+     *  <classification-ipc-secondary>
+     *  <ipc>G04B019/24</ipc>
+     *  </classification-ipc-secondary>
+     *  <classification-ipc-edition>07</classification-ipc-edition>
+     *  </classification-ipc>
+     */
     for (const pugi::xpath_node& ipc : ipcNodes) {
         pugi::xpath_node_set subNodes = ipc.node().select_nodes(subNodesQuery_.pugiQuery());
 
-        if (subNodes.size() != 5) continue;
+        if (subNodes.size() < 0) continue;
 
-        subNodes.sort();
-
-        output += string(subNodes[0].node().text().get()) +
-                subNodes[1].node().text().get() +
-                subNodes[2].node().text().get() + '-' +
-                subNodes[3].node().text().get() + '/' +
-                subNodes[4].node().text().get() + ',';
+        for(const auto i : subNodes){
+            output += string(i.node().text().get()).substr(0,4) + '-' +
+                      string(i.node().text().get()).substr(4)+ ',';
+        }
     }
     if (!output.empty())
         output.pop_back();

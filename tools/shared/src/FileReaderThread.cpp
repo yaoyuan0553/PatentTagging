@@ -5,8 +5,7 @@
 #include "FileReaderThread.h"
 
 #include "Utility.h"
-
-#include <stdio.h>
+#include "XmlFile.h"
 
 
 void FileReaderThread::internalRun()
@@ -30,7 +29,7 @@ void FileReaderThread::internalRun()
 
         fread(buffer, sizeof(char), bytes, inputFile);
 
-        batchOutput_.emplace_back(buffer, bytes);
+        batchOutput_.emplace_back(XmlFile{filename, buffer, bytes});
 
         if (++bN % batchSize_ == 0)
             addBatchToQueue();

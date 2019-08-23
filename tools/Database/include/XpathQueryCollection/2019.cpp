@@ -2,14 +2,14 @@
 // Created by yuan on 8/15/19.
 //
 
-#include "XpathQueryCollection.h"
+#include "2019.h"
 
 #include <iostream>
 
 using namespace std;
 
 
-string XpathIdQuery::operator()(pugi::xml_node& root)
+string XpathIdQuery2019::operator()(pugi::xml_node& root)
 {
     pugi::xml_node idRootNode = root.select_node(idRootQuery_.pugiQuery()).node();
 
@@ -25,7 +25,7 @@ string XpathIdQuery::operator()(pugi::xml_node& root)
     return output;
 }
 
-std::string XpathAbstractQuery::operator()(pugi::xml_node& root)
+std::string XpathAbstractQuery2019::operator()(pugi::xml_node& root)
 {
     pugi::xml_node idRootNode = root.select_node(abstractQuery_.pugiQuery()).node();
 
@@ -48,7 +48,7 @@ std::string XpathAbstractQuery::operator()(pugi::xml_node& root)
     return output;
 }
 
-std::string XpathClaimQuery::operator()(pugi::xml_node& root)
+std::string XpathClaimQuery2019::operator()(pugi::xml_node& root)
 {
     pugi::xpath_node_set claimNodes = root.select_nodes(claimQuery_.pugiQuery());
 
@@ -70,7 +70,7 @@ std::string XpathClaimQuery::operator()(pugi::xml_node& root)
     return output;
 }
 
-std::string XpathIpcQuery::operator()(pugi::xml_node& root)
+std::string XpathIpcQuery2019::operator()(pugi::xml_node& root)
 {
     pugi::xpath_node_set ipcNodes = root.select_nodes(ipcNodesQuery_.pugiQuery());
 

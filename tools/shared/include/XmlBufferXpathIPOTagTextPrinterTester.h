@@ -21,7 +21,7 @@ protected:
     std::string outputFilename_;
 
     ConcurrentQueue<std::string> filenameQueue_;
-    CQueue<std::pair<char*, size_t>> xmlDocQueue_;
+    CQueue<XmlFile> xmlDocQueue_;
     CQueue<std::string*> outputStringQueue_;
 
     void initializeData() override
