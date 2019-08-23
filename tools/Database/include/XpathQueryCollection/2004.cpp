@@ -11,7 +11,7 @@ using namespace std;
 string XpathIdQuery2004::operator()(pugi::xml_node& root)
 {
     pugi::xml_node idRootNode = root.select_node(idRootQuery_.pugiQuery()).node();
-    string output;
+    string output = "US";
 
     for (const XpathQuery& xqs : idNodeQueryList_) {
         auto str = idRootNode.select_node(xqs.pugiQuery()).node().text();
@@ -20,7 +20,7 @@ string XpathIdQuery2004::operator()(pugi::xml_node& root)
         output += str.get();
     }
 
-    return output;
+    return output == "US" ? "" : output;
 }
 
 std::string XpathAbstractQuery2004::operator()(pugi::xml_node& root)

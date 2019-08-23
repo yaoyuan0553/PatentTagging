@@ -347,12 +347,12 @@ class XpathIPOTagTester : public XmlBufferXpathIPOTagTextPrinterTester {
         using namespace std;
         xpathQueryTextFormatterDict_.add<XpathIdQuery2004>(
                 PID, "//subdoc-bibliographic-information",
-                vector<XpathQueryString>{".//correspondence-address//country-code", "./document-id/doc-number", ".//kind-code"}
+                vector<XpathQueryString>{"./document-id/doc-number", ".//kind-code"}
         );
 
         xpathQueryTextFormatterDict_.add<XpathIdQuery2004>(
                 AID, "//subdoc-bibliographic-information",
-                vector<XpathQueryString>{".//correspondence-address//country-code", "./domestic-filing-data/application-number/doc-number"}
+                vector<XpathQueryString>{"./domestic-filing-data/application-number/doc-number"}
         );
 
         xpathQueryTextFormatterDict_.add<XpathDateQuery2004>(
