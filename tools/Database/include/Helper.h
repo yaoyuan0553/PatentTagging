@@ -104,11 +104,19 @@ namespace Details
 }
 
 
-/* concatenate given strings delimiters
- * function takes at lease 3 arguments,
- * with the first argument being the delimiter,
- * and the rest being strings to be concatenated
- * */
+/**
+ * @brief
+ * @details  concatenate given strings delimiters
+ *      function takes at lease 3 arguments,
+ *      with the first argument being the delimiter,
+ *      and the rest being strings to be concatenated
+ * @tparam Args
+ * @param delimiter
+ * @param str1
+ * @param str2
+ * @param otherStrs
+ * @return
+ */
 template <typename... Args, typename = Details::AllString<Args...>>
 std::string ConcatStringWithDelimiter(const char* delimiter,
         const std::string& str1, const std::string& str2, const Args&... otherStrs)

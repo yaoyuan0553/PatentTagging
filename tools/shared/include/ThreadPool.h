@@ -55,7 +55,6 @@ public:
         push_back(t);
     }
 */
-
     template <class ThreadInterfaceSubclass, typename... Args>
     void add(Args&&... args)
     {

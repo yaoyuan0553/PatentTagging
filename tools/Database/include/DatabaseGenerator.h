@@ -13,6 +13,7 @@
 #include "DataAndIndexGeneratorThread.h"
 #include "DatabaseFileWriterThread.h"
 
+#include "XpathQueryCollection.h"
 
 #define ISC inline static constexpr
 #define ISC_STRING(name) ISC char name[]

@@ -10,7 +10,9 @@
 
 #include "DataTypes.h"
 
-#include "XpathQueryCollection.h"
+#include "XpathQueryCollection/2004.h"
+#include "XpathQueryCollection/2005.h"
+#include "XpathQueryCollection/2019.h"
 
 #include "DatabaseGenerator.h"
 
@@ -22,7 +24,6 @@ using namespace std;
 namespace fs = std::filesystem;
 
 #define DEBUG 1
-
 
 /* takes output data and write to disk every n GB */
 /*
@@ -72,14 +73,6 @@ public:
     }
 };
 
-
-
-
-
-
-
-
-
 void testDataRecordFile()
 {
     DataRecordFile dataRecordFile;
@@ -94,7 +87,6 @@ void testDataRecordFile()
     uint32_t recordSize = sizeof(uint32_t) * 5;
     for (const auto& r : records)
         recordSize += r.length();
-
 */
     if (!dataRecordFile.appendRecord(dataText, indexText))
         cerr << "what?\n";
@@ -252,11 +244,10 @@ class XpathIPOTagTester : public XmlBufferXpathIPOTagTextPrinterTester {
     ISC_STRING(CLAIM) = "claim";
     ISC_STRING(DESCRIPTION) = "description";
 
-    void initializeQuery() final
+    void initializeQuery2019()
     {
-//        xpathQueryTextFormatterDict_.add<XpathSingleQueryGreedyNoExtraSpaceInnerText>(
-//                "claimText", XpathQueryString("//claim-text")
-//                );
+        using namespace std;
+
         xpathQueryTextFormatterDict_.add<XpathIdQuery>(
                 PID, "//publication-reference",
                 vector<XpathQueryString>{".//country", ".//doc-number", ".//kind"}
@@ -297,6 +288,105 @@ class XpathIPOTagTester : public XmlBufferXpathIPOTagTextPrinterTester {
                 DESCRIPTION, "//description"
         );
     }
+
+    void initializeQuery2005()
+    {
+        //initializeQuery  for xml in [2005,2005]
+//        xpathQueryTextFormatterDict_.add<XpathSingleQueryGreedyNoExtraSpaceInnerText>(
+//                "claimText", XpathQueryString("//claim-text")
+//                );
+        xpathQueryTextFormatterDict_.add<XpathIdQuery2005>(
+                PID, "//publication-reference",
+                vector<XpathQueryString>{".//country", ".//doc-number", ".//kind"}
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathIdQuery2005>(
+                AID, "//application-reference",
+                vector<XpathQueryString>{".//country", ".//doc-number"}
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathDateQuery2005>(
+                PUB_DATE, "//publication-reference",
+                vector<XpathQueryString>{".//date"}
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathDateQuery2005>(
+                APP_DATE, "//application-reference",
+                vector<XpathQueryString>{".//date"}
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathIpcQuery2005>(
+                IPC, ".//classification-ipc"
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathTitleQuery2005>(
+                TITLE, "//invention-title"
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathAbstractQuery2005>(
+                ABSTRACT, "//abstract"
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathClaimQuery2005>(
+                CLAIM, "//claim"
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathDescriptionQuery2005>(
+                DESCRIPTION, "//description"
+        );
+    }
+
+    void initializeQuery2004()
+    {
+        //initializeQuery  for xml in [:,2004]
+//        xpathQueryTextFormatterDict_.add<XpathSingleQueryGreedyNoExtraSpaceInnerText>(
+//                "claimText", XpathQueryString("//claim-text")
+//                );
+        xpathQueryTextFormatterDict_.add<XpathIdQuery2004>(
+                PID, "//subdoc-bibliographic-information",
+                vector<XpathQueryString>{".//correspondence-address//country-code", "./document-id/doc-number", ".//kind-code"}
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathIdQuery2004>(
+                AID, "//subdoc-bibliographic-information",
+                vector<XpathQueryString>{".//correspondence-address//country-code", "./domestic-filing-data/application-number/doc-number"}
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathDateQuery2004>(
+                PUB_DATE, "//subdoc-bibliographic-information",
+                vector<XpathQueryString>{"./document-id/document-date"}
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathDateQuery2004>(
+                APP_DATE, "//subdoc-bibliographic-information",
+                vector<XpathQueryString>{".//filing-date"}
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathIpcQuery2004>(
+                IPC, ".//subdoc-bibliographic-information"
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathTitleQuery2004>(
+                TITLE, "//title-of-invention"
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathAbstractQuery2004>(
+                ABSTRACT, "//subdoc-abstract"
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathClaimQuery2004>(
+                CLAIM, "//subdoc-claims"
+        );
+
+        xpathQueryTextFormatterDict_.add<XpathDescriptionQuery2004>(
+                DESCRIPTION, "//subdoc-description"
+        );
+    }
+
+    void initializeQuery() final
+    {
+        initializeQuery2004();
+    }
 public:
     XpathIPOTagTester(string_view pathFilename, string_view outputFilename,
             int nReaders, int nProcessors) :
@@ -304,7 +394,7 @@ public:
                     outputFilename, nReaders, nProcessors) { }
 };
 
-#define MODEL4
+#define MODEL3
 
 #if defined(MODEL2)
 struct Usage {
@@ -364,8 +454,8 @@ struct QueryUsage {
 
 void testDatabaseQuery(int argc, char* argv[])
 {
-    if (argc != QueryUsage::ARGC)
-        QueryUsage::printAndExit(argv[0]);
+//    if (argc != QueryUsage::ARGC)
+//        QueryUsage::printAndExit(argv[0]);
 
     DatabaseQueryManager databaseQuery(argv[1], argv[2], "patent-data");
 
@@ -402,15 +492,16 @@ int main(int argc, char* argv[])
     if (argc != Usage::ARGC)
         Usage::printAndExit(argv[0]);
 
-//    XpathIPOTagTester tagTester(argv[1], argv[2], atoi(argv[3]), atoi(argv[4]));
-//
-//    tagTester.process();
+
+    XpathIPOTagTester tagTester(argv[1], argv[2], atoi(argv[3]), atoi(argv[4]));
+
+    tagTester.process();
 //    testDataRecordFile();
 
-    DatabaseGenerator databaseGenerator(argv[1], argv[2], argv[3],
-            atoi(argv[4]), atoi(argv[5]));
+//    DatabaseGenerator databaseGenerator(argv[1], argv[2], argv[3],
+//            atoi(argv[4]), atoi(argv[5]));
 
-    databaseGenerator.process();
+//    databaseGenerator.process();
 
 //    testDatabaseQuery(argc, argv);
 
