@@ -10,3 +10,8 @@ swig_out/
 
 *.a
 *.so
+
+CMakeFiles/
+Makefile
+CMakeCache*
+cmake_install*
