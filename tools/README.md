@@ -1,11 +1,16 @@
 # A Guide to Use Database Tools
 
+## Table of Contents
+[Environment](#Environment)
+
+[Installation](#Installation)
+
 ## Environment
 
 System Requirements
 
 ```
-Ubuntu 18.04.2 LTS (GNU/Linux 4.15.0-55-generic x86_64)
+Ubuntu 18.04.2 LTS
 ```
 
 The database tools are written in C++. 
