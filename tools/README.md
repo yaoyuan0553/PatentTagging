@@ -2,13 +2,13 @@
 
 Note: all of the following are guides to setup/run the Database project (inside `Database` folder)
 ## Table of Contents
-[Environment](#Environment)
+[Environment](#environment)
 
-[Installation](#Installation)
+[Installation](#installation)
 
-[Usage & Run Guide](#Usage)
+[Usage & Run Guide](#usage-\&-run-guide)
 
-[Cross-language Support](#Cross\-language-Support-API-Support)
+[Cross-language Support](#cross\-language-api-support)
 
 ## Environment
 
