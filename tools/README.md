@@ -178,8 +178,29 @@ Lastly, Run
 ```
 make -k check -j8
 ```
-to check whether or not the installation is correct
-(Note: -j option is dependent on the number of CPU cores on your machine, for n cores, use -jn to compile) 
+to check whether or not the installation is correct.
+
+(Note: the -j option is dependent on the number of CPU cores on your machine, for n cores, use -jn to compile) 
 
 ### Python API Wrapper for `DatabaseQueryManager`
+#### Compilation 
+Run 
+```shell script
+cmake --build . --target DatabaseQueryPython -- -j 8
+```
+to compile and generate the shared library and Python wrapper.
 
+The compiled Python Wrapper will be placed in `tools/swig_out/python`
+
+Use test.py file located in `tools/swig_out/python` as an example
+to use the generated python API wrapper.
+
+For additional documentation, refer to PyDoc written in DatabaseQueryPython.py
+for guidance.
+
+### Java API Wrapper for `DatabaseQueryManager`
+Run 
+```shell script
+cmake --build . --target DatabaseQueryJava -- -j 8
+```
+to compile and generate the shared library and Java wrapper.
