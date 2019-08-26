@@ -1,11 +1,21 @@
 # A Guide to Use Database Tools
 
+Note: all of the following are guides to setup/run the Database project (inside `Database` folder)
+## Table of Contents
+[Environment](#environment)
+
+[Installation](#installation)
+
+[Usage & Run Guide](#usage-and-run-guide)
+
+[Cross-language Support](#cross\-language-api-support)
+
 ## Environment
 
 System Requirements
 
 ```
-Ubuntu 18.04.2 LTS (GNU/Linux 4.15.0-55-generic x86_64)
+Ubuntu 18.04.2 LTS
 ```
 
 The database tools are written in C++. 
@@ -56,7 +66,7 @@ cmake --build . --target DatabaseQuerySelectorExe -- -j4
 ```
 This will compile and drop executables inside `tools/bin` directory.
 
-## Usage & Run Guide
+## Usage and Run Guide
 
 ### DatabaseGenerator
 
@@ -135,3 +145,62 @@ claim: 1 . A process for preparing alumina, said process comprising:
 
 getInfoById: ID [US20140332418A1] does not exist in database
 ```
+
+## Cross-language API Support
+This project uses [SWIG](http://www.swig.org/) as a primariy tool to build cross-language wrapper 
+to use the core database query functionality written & compiled in C++. Therefore, to be able to
+compile a library compatible with user's OS system, additional tools and libraries used by SWIG must
+be installed. Please follow the instructions of listed by 
+[SWIG Github Wiki](https://github.com/swig/swig/wiki/Getting-Started)
+to install prerequisites for SWIG installation.
+
+After the environment for installing SWIG is setup. Download and extract swig from link
+
+`https://github.com/swig/swig/archive/rel-4.0.0.tar.gz`
+
+Following the guide on [SWIG's website](http://swig.org/svn.html):
+
+Untar it with 
+```shell script
+tar zxf swig-rel-4.0.0.tar.gz
+cd swig-rel-4.0.0
+```
+Run
+```shell script
+./autogen.sh
+./configure
+make -j8
+sudo make install -j8
+```
+to install SWIG.
+
+Lastly, Run
+```
+make -k check -j8
+```
+to check whether or not the installation is correct.
+
+(Note: the -j option is dependent on the number of CPU cores on your machine, for n cores, use -jn to compile) 
+
+### Python API Wrapper for `DatabaseQueryManager`
+#### Compilation 
+Run 
+```shell script
+cmake --build . --target DatabaseQueryPython -- -j 8
+```
+to compile and generate the shared library and Python wrapper.
+
+The compiled Python Wrapper will be placed in `tools/swig_out/python`
+
+Use test.py file located in `tools/swig_out/python` as an example
+to use the generated python API wrapper.
+
+For additional documentation, refer to PyDoc written in DatabaseQueryPython.py
+for guidance.
+
+### Java API Wrapper for `DatabaseQueryManager`
+Run 
+```shell script
+cmake --build . --target DatabaseQueryJava -- -j 8
+```
+to compile and generate the shared library and Java wrapper.
