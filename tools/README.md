@@ -8,7 +8,7 @@ Note: all of the following are guides to setup/run the Database project (inside 
 
 [Usage & Run Guide](#Usage)
 
-[Cross-language Support](#Cross-language)
+[Cross-language Support](#Cross)
 
 ## Environment
 
