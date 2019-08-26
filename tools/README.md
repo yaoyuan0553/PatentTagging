@@ -5,6 +5,8 @@
 
 [Installation](#Installation)
 
+[Usage & Run Guide](#Usage)
+
 ## Environment
 
 System Requirements
