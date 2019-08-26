@@ -6,7 +6,7 @@ Note: all of the following are guides to setup/run the Database project (inside 
 
 [Installation](#installation)
 
-[Usage & Run Guide](#usage-\&-run-guide)
+[Usage & Run Guide](#usage-and-run-guide)
 
 [Cross-language Support](#cross\-language-api-support)
 
@@ -66,7 +66,7 @@ cmake --build . --target DatabaseQuerySelectorExe -- -j4
 ```
 This will compile and drop executables inside `tools/bin` directory.
 
-## Usage & Run Guide
+## Usage and Run Guide
 
 ### DatabaseGenerator
 
