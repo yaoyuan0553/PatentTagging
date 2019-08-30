@@ -81,6 +81,16 @@ print(title.value())
 print(abstract.value())
 print(claim.value())
 
+# output storage to store a list of title's
+idTitleList = dq.IdDataPartVector()
+
+# request DatabaseQueryManager to get title's from the corresponding list of PIDs
+dqm.getContentPartByIdList(miniPidList, dqm.TITLE, idTitleList)
+
+# print titles along with their PIDs
+for idTitle in idTitleList:
+    print("%s: %s" % (idTitle.pid, idTitle.dataPart))
+
 # IdDataRecord* allocated by new does get correctly freed
 # sample usage of a fast batch querying program for saving
 # memory while keeping performance

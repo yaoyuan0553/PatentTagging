@@ -51,6 +51,8 @@ namespace std {
     %template(IndexValueVector) vector<IndexValue*>;
 
     %template(IdDataRecordVector) vector<shared_ptr<IdDataRecord>>;
+
+    %template(IdDataPartVector) vector<IdDataPart>;
 };
 
 %include "DatabaseQueryWrapper.h"

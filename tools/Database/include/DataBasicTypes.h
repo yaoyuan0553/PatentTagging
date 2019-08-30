@@ -121,5 +121,13 @@ struct IdDataRecord {
     DataRecord dataRecord;
 };
 
+/**
+ * @brief stores PID, AID, and its corresponding partial data content
+ */
+struct IdDataPart {
+    std::string pid;
+    std::string aid;
+    std::string dataPart;
+};
 
 #endif //TOOLS_DATABASICTYPES_H

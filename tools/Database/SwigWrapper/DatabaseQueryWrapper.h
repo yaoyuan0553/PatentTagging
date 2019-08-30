@@ -59,6 +59,8 @@ class DatabaseQueryManager {
     const IndexTableWithSpecificKey& pidTable_;
     const IndexTableWithSpecificKey& aidTable_;
 
+    inline static constexpr uint32_t INVALID = -1;
+
 public:
     enum ContentPartType {
         TITLE,
@@ -129,11 +131,20 @@ public:
      */
     bool getContentById(const char* id, DataRecord* dataRecord) const;
 
+    /**
+     * @brief retrieves a single document's title/abstract/claim/description with a given PID or AID
+     * @warning this method is meant for single queries only. For a collection of
+     *          PIDs or AIDs, if this method is called frequently, it'll be
+     *          extremely inefficient. Please use getContentPartByIdList instead
+     * @param id                INPUT: PID or AID
+     * @param contentPartType   INPUT: ContentPartType to be retrieved, options are: TITLE, ABSTRACT, CLAIM, DESCRIPTION
+     * @param contentPart       OUTPUT: the retrieved data, empty if not found
+     * @return                  true if found, false if not found
+     */
     bool getContentPartById(const char* id, ContentPartType contentPartType, std::string* contentPart) const;
 
-
-//    bool getAbstractById(const char* id, std::string* abstract) const;
-
+    void getContentPartByIdList(const std::vector<std::string>& idList,
+            ContentPartType contentPartType, std::vector<IdDataPart>* contentPart) const;
 
     /**
      * @brief retrieves a collection of parsed XML text body with a list of PIDs or AIDs
@@ -142,10 +153,46 @@ public:
      */
     void getContentByIdList(const std::vector<std::string>& idList,
             std::vector<std::shared_ptr<IdDataRecord>>* idDataRecordList) const;
+
+private:
+
+    inline bool checkIndexByContentPartType(ContentPartType cpt) const;
+
+    inline uint32_t getIndexByContentPartType(const IndexValue* iv, ContentPartType cpt) const;
 };
 
+inline bool DatabaseQueryManager::checkIndexByContentPartType(ContentPartType cpt) const
+{
+    switch (cpt)
+    {
+    case TITLE: break;
+    case ABSTRACT: break;
+    case CLAIM: break;
+    case DESCRIPTION: break;
+    default:
+        fprintf(stderr, "%s: incorrect ContentPartType option %d\n", __FUNCTION__, cpt);
+        return false;
+    }
+    return true;
+}
 
-
+uint32_t DatabaseQueryManager::getIndexByContentPartType(const IndexValue* iv, ContentPartType cpt) const
+{
+    switch (cpt)
+    {
+    case TITLE:
+        return iv->ti;
+    case ABSTRACT:
+        return iv->ai;
+    case CLAIM:
+        return iv->ci;
+    case DESCRIPTION:
+        return iv->di;
+    default:
+        fprintf(stderr, "%s: incorrect ContentPartType option %d\n", __FUNCTION__, cpt);
+        return INVALID;
+    }
+}
 
 
 #endif //TOOLS_DATABASEQUERYSELECTORSWIG_H
