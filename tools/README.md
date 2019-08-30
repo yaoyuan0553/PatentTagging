@@ -16,6 +16,7 @@ System Requirements
 
 ```
 Ubuntu 18.04.2 LTS
+CentOS 7 (check release for binaries)
 ```
 
 The database tools are written in C++. 
