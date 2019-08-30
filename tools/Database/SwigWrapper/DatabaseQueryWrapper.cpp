@@ -237,7 +237,7 @@ bool DatabaseQueryManager::getContentPartById(const char* id, ContentPartType cp
 
 void DatabaseQueryManager::getContentPartByIdList(const std::vector<std::string>& idList,
                                                   DatabaseQueryManager::ContentPartType contentPartType,
-                                                  std::vector<IdDataPart>* contentPart) const
+                                                  std::vector<IdDataPart>* idContentPartList) const
 {
     if (!checkIndexByContentPartType(contentPartType))
         return;
@@ -254,7 +254,7 @@ void DatabaseQueryManager::getContentPartByIdList(const std::vector<std::string>
     for (const IndexValue* info : infoList) {
         indexByBinId[info->binId].push_back(info);
     }
-    contentPart->reserve(idList.size());
+    idContentPartList->reserve(idList.size());
 
     for (const auto& [binId, ivList]: indexByBinId) {
         DataRecordFile dataFile;
@@ -265,13 +265,13 @@ void DatabaseQueryManager::getContentPartByIdList(const std::vector<std::string>
             dataFile.readFromFileFull(binName.c_str());
 
         for (const IndexValue* iv : ivList) {
-            contentPart->emplace_back();
+            idContentPartList->emplace_back();
             uint32_t index = getIndexByContentPartType(iv, contentPartType);
             // note: no need to check for INVALID since we already checked at the beginning of this function
-            if (!dataFile.GetDataAtOffsetIndex(iv->offset, index, &contentPart->back().dataPart))
+            if (!dataFile.GetDataAtOffsetIndex(iv->offset, index, &idContentPartList->back().dataPart))
                 continue;
-            contentPart->back().pid = iv->pid;
-            contentPart->back().aid = iv->aid;
+            idContentPartList->back().pid = iv->pid;
+            idContentPartList->back().aid = iv->aid;
         }
     }
 }

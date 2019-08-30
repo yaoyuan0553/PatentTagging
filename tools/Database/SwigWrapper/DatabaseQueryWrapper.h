@@ -143,8 +143,14 @@ public:
      */
     bool getContentPartById(const char* id, ContentPartType contentPartType, std::string* contentPart) const;
 
+    /**
+     * @brief retrieves a collection of parsed XML text body with a list of PIDs or AIDs
+     * @param idList            INPUT: list of PIDs or AIDs
+     * @param contentPartType   INPUT: ContentPartType to be retrieved, options are: TITLE, ABSTRACT, CLAIM, DESCRIPTION
+     * @param idContentPartList OUTPUT: list of IdContentPart
+     */
     void getContentPartByIdList(const std::vector<std::string>& idList,
-            ContentPartType contentPartType, std::vector<IdDataPart>* contentPart) const;
+            ContentPartType contentPartType, std::vector<IdDataPart>* idContentPartList) const;
 
     /**
      * @brief retrieves a collection of parsed XML text body with a list of PIDs or AIDs
