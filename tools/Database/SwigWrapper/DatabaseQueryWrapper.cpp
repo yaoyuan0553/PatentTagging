@@ -165,6 +165,7 @@ const IndexValue* DatabaseQueryManager::getInfoById(const char* id) const
     return nullptr;
 }
 
+
 void DatabaseQueryManager::getInfoByIdList(
         const std::vector<std::string>& idList, std::vector<const IndexValue*>* output) const
 {
@@ -211,4 +212,40 @@ void DatabaseQueryManager::getContentByIdList(const vector<string>& idList,
             idDataRecordList->back()->aid = iv->aid;
         }
     }
+}
+
+bool DatabaseQueryManager::getContentPartById(const char* id, ContentPartType cpt, std::string* contentPart) const
+{
+    const IndexValue* iv;
+    if (!(iv = getInfoById(id))) {
+        fprintf(stderr, "%s: ID [%s] does not exist in database\n",
+                __FUNCTION__, id);
+        return false;
+    }
+
+    std::string binFilename = getBinFilenameWithBinId(iv->binId);
+
+    DataRecordFile dataRecordFile;
+    dataRecordFile.readFromFile(binFilename.c_str());
+
+    uint32_t index;
+    switch (cpt)
+    {
+    case TITLE:
+        index = iv->ti;
+        break;
+    case ABSTRACT:
+        index = iv->ai;
+        break;
+    case CLAIM:
+        index = iv->ci;
+        break;
+    case DESCRIPTION:
+        index = iv->di;
+        break;
+    default:
+        fprintf(stderr, "%s: incorrect ContentPartType option %d\n", __FUNCTION__, cpt);
+        return false;
+    }
+    return dataRecordFile.GetDataAtOffsetIndex(iv->offset, index, contentPart);
 }

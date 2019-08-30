@@ -60,6 +60,12 @@ class DatabaseQueryManager {
     const IndexTableWithSpecificKey& aidTable_;
 
 public:
+    enum ContentPartType {
+        TITLE,
+        ABSTRACT,
+        CLAIM,
+        DESCRIPTION
+    };
 
     /**
      * @brief constructs a singleton DatabaseQueryManager instance
@@ -122,6 +128,12 @@ public:
      * @return              true if found, false if not found
      */
     bool getContentById(const char* id, DataRecord* dataRecord) const;
+
+    bool getContentPartById(const char* id, ContentPartType contentPartType, std::string* contentPart) const;
+
+
+//    bool getAbstractById(const char* id, std::string* abstract) const;
+
 
     /**
      * @brief retrieves a collection of parsed XML text body with a list of PIDs or AIDs

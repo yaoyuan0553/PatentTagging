@@ -325,6 +325,8 @@ public:
      * returns false if offset is invalid, and true on success */
     bool GetDataRecordAtOffset(uint64_t offset, DataRecord* dataRecord) const;
 
+    bool GetDataAtOffsetIndex(uint64_t offset, uint32_t index, std::string* data) const;
+
     bool GetDataRecordAtOffset(uint64_t offset, IdDataRecordCType* dataRecord) const;
 };
 

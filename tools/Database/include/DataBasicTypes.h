@@ -11,7 +11,9 @@
 #include "Helper.h"
 
 
-/* used to interpret & copy-out records stored in data file buffers */
+/**
+ * @brief used to interpret & copy-out records stored in data file buffers *
+ */
 struct DataRecord : Stringifiable {
     /* read only attributes */
     uint32_t size = 0;
@@ -61,6 +63,10 @@ struct DataRecord : Stringifiable {
     /* disable copy assigment */
     DataRecord& operator=(DataRecord&) = delete;
 
+    /**
+     * @brief pretty print data stored in this structure
+     * @return converted string
+     */
     inline std::string stringify() const final
     {
         return ConcatStringWithDelimiter("\n",
@@ -73,6 +79,9 @@ struct DataRecord : Stringifiable {
     friend std::ostream& operator<<(std::ostream& os, const DataRecord& dataRecord);
 };
 
+/**
+ * @brief represents a row of record stored in index.tsv files
+ */
 struct IndexValue : public Stringifiable {
 
     inline static const std::string header = ConcatStringWithDelimiter("\t",
@@ -84,6 +93,10 @@ struct IndexValue : public Stringifiable {
     uint32_t                    binId, ti, ai, ci, di;
     uint64_t                    offset;
 
+    /**
+     * @brief pretty print data stored in this structure
+     * @return converted string
+     */
     inline std::string stringify() const final
     {
         using std::to_string;
@@ -99,6 +112,9 @@ struct IndexValue : public Stringifiable {
     friend std::istream& operator>>(std::istream& is, IndexValue& ie);
 };
 
+/**
+ * @brief stores PID, AID, and its corresponding DataRecord content
+ */
 struct IdDataRecord {
     std::string pid;
     std::string aid;

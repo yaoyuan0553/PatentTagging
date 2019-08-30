@@ -37,22 +37,24 @@
 %apply unsigned int { uint32_t };
 %apply unsigned long { uint64_t };
 
-//%apply bool* OUTPUT { bool* exist };
+%feature("autodoc", "Python wrapper class representing a C++ std::string*") StringPtr;
+%pointer_class(std::string, StringPtr)
+
 %pointer_class(bool, boolPtr);
 
 %array_class(int, IntArray);
 
 namespace std {
+
     %template(StringVector) vector<string>;
 
     %template(IndexValueVector) vector<IndexValue*>;
 
-    %template(IdDataRecordVector) std::vector<std::shared_ptr<IdDataRecord>>;
+    %template(IdDataRecordVector) vector<shared_ptr<IdDataRecord>>;
 };
 
 %include "DatabaseQueryWrapper.h"
 %include "DataBasicTypes.h"
 
 %template(PairII) Pair<int, int>;
-
 

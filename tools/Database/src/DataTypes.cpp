@@ -307,6 +307,43 @@ bool DataRecordFile::GetDataRecordAtOffset(uint64_t offset, IdDataRecordCType* d
     return true;
 }
 
+bool DataRecordFile::GetDataAtOffsetIndex(uint64_t offset, uint32_t index, std::string* data) const
+{
+    if (offset + index > nBytesWritten_) {
+        fprintf(stderr, "%s: offset + index %lu exceeds file [prefix_%u.bin] with %lu B\n",
+                __FUNCTION__, offset + index, binId_, nBytesWritten_);
+        return false;
+    }
+
+    const char* curBuf = buf_ + offset;
+    uint32_t& size = *(uint32_t*)curBuf;
+
+    if (size > nBytesWritten_) {
+        fprintf(stderr, "%s: record size %u exceeds file [prefix_%u.bin] with %lu B\n",
+                __FUNCTION__, size, binId_, nBytesWritten_);
+        return false;
+    }
+
+    if (size == 0) {
+        if (!readRecordFromFile(offset))
+            return false;
+    }
+
+    curBuf += index;
+    uint32_t& dataSize = *(uint32_t*)curBuf;
+
+    if (dataSize > size) {
+        fprintf(stderr, "%s: data size %u exceeds data record size %u\n",
+                __FUNCTION__, dataSize, size);
+        return false;
+    }
+    curBuf += sizeof(uint32_t);
+
+    *data = string(curBuf, curBuf + dataSize);
+
+    return true;
+}
+
 
 /*
 bool DataRecordFile::GetDataRecordAtOffset(uint64_t offset, DataRecord* dataRecord) const

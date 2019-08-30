@@ -63,9 +63,28 @@ print("indexValue = %s" % indexValue.stringify())
 
 print("iv2 = %s" % iv2.stringify())
 
+# `StringPtr` is equivalent to C++'s std::string*
+# you can get the python `str` value with .value() method
+title = dq.StringPtr()
+abstract = dq.StringPtr()
+claim = dq.StringPtr()
+description = dq.StringPtr()
+
+# get title
+dqm.getContentPartById(pidList[0], dqm.TITLE, title)
+# get abstract
+dqm.getContentPartById(pidList[0], dqm.ABSTRACT, abstract)
+# get claim
+dqm.getContentPartById(pidList[0], dqm.CLAIM, claim)
+
+print(title.value())
+print(abstract.value())
+print(claim.value())
+
 # IdDataRecord* allocated by new does get correctly freed
 # sample usage of a fast batch querying program for saving
 # memory while keeping performance
+
 with tqdm.tqdm(total=pidList.size()) as t:
     batch = 1024 * 32
     i = 0
