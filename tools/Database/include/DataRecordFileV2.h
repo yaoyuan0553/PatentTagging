@@ -13,9 +13,14 @@
 
 class DataRecordFileV2 {
 protected:
+    /*! binary data */
     char* const buf_;
+    /*! keeps track of number of bytes used in buf_ */
     uint64_t& nBytes_;
+    /*! keeps track of number of records stored in buf_ */
     uint32_t& nRecords_;
+
+    uint64_t allocatedSize_;
 
     inline static constexpr auto FILE_HEAD_SIZE =
             sizeof(decltype(nBytes_)) +
@@ -26,7 +31,7 @@ protected:
      *          a 4 byte unsigned integer - nRecords
      *          which means the buf_ will only be 12 bytes initially
      */
-    DataRecordFileV2();
+    explicit DataRecordFileV2(uint64_t sizeToAllocate);
 
 public:
     /**
@@ -55,10 +60,11 @@ class DataRecordFileWriter : DataRecordFileV2, public FileWritable {
      */
     char* curBuf_;
 
-    /**
-     * stores the corresponding index value list and writes to disk
-     */
+    /*! stores the corresponding index value list and writes to disk */
     IndexValueList indexValueList_;
+
+    /*! max number of bytes in the file */
+    uint64_t maxFileSize_;
 
     /**
      * obtains a new bin Id for a newly created instance
@@ -67,7 +73,7 @@ class DataRecordFileWriter : DataRecordFileV2, public FileWritable {
 
 public:
 
-    DataRecordFileWriter(size_t maxFileSize);
+    explicit DataRecordFileWriter(size_t maxFileSize);
 
 };
 
