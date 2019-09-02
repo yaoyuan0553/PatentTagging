@@ -14,9 +14,6 @@ using namespace std;
 
 void DataRecordFile::clear()
 {
-    /* atomically obtains file id */
-    binId_ = nextBinId_.fetch_add(1);
-
     memset(buf_, 0, MAX_FILE_SIZE);
     curBuf_ = buf_ + FILE_HEAD_SIZE;
     nBytesWritten_ = FILE_HEAD_SIZE;
