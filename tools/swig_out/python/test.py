@@ -97,9 +97,9 @@ for idTitle in idTitleList:
 
 with tqdm.tqdm(total=pidList.size()) as t:
     batch = 1024 * 32
-    i = 0
+    i = batch
     while i < pidList.size():
         idDrList = dq.IdDataRecordVector()
-        dqm.getContentByIdList(pidList[i:i+batch], idDrList)
+        dqm.getContentByIdList(pidList[i-batch:i], idDrList)
         i += batch
         t.update(batch)
