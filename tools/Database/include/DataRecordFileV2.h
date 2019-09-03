@@ -89,13 +89,25 @@ public:
         return std::string(prefix) + "_" + std::to_string(binId_) + ".bin";
     }
 
+    /*!
+     * @brief writes data records to file
+     * @param filename file name of this data record file
+     */
     void writeToFile(const char* filename) final;
+
 };
 
 inline void DataRecordFileWriter::obtainBinId()
 {
     binId_ = nextBinId_++;
 }
+
+
+class DataRecordFileReader : DataRecordFileV2 {
+    inline void openDataFile(const char* dataFilename);
+public:
+    explicit DataRecordFileReader(const char* dataFilename);
+};
 
 
 #endif //TOOLS_DATARECORDFILEV2_H
