@@ -22,7 +22,12 @@ miniPidList = dq.StringVector([pidList[0], pidList[1], pidList[2]])
 
 print(miniPidList.size())
 
-# dr = dqm.getContentById
+print("testing getContentById speed")
+with tqdm.tqdm(total=pidList.size()) as t:
+    for pid in pidList:
+        dr = dq.DataRecord()
+        dqm.getContentById(pid, dr)
+        t.update(1)
 
 idDrList = dq.IdDataRecordVector()
 

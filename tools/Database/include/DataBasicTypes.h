@@ -134,11 +134,13 @@ struct IdDataPart {
 };
 
 struct DataRecordV2 : Stringifiable {
+public:
     uint32_t recordSize = 0;
     std::string title;
     std::string abstract;
     std::string claim;
     std::string description;
+
 
     DataRecordV2() = default;
 
@@ -203,7 +205,6 @@ struct DataRecordV2 : Stringifiable {
                 "<(claim)>: " + claim,
                 "<(description)>: " + description);
     }
-
 };
 
 #endif //TOOLS_DATABASICTYPES_H

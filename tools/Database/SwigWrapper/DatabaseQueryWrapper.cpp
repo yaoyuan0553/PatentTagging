@@ -294,7 +294,9 @@ DatabaseQueryManagerV2::DatabaseQueryManagerV2(
         pidTable_(indexTable_.pid2Index()),
         aidTable_(indexTable_.aid2Index())
 {
-
+    // initialize all dataRecordFile's corresponding to the bin IDs
+    for (auto [binId, _] : indexTable_.binId2Index())
+        dataRecordFileByBinId_.emplace(binId, getBinFilenameWithBinId(binId).c_str());
 }
 
 void DatabaseQueryManagerV2::getAllId(vector<string>* pidList, vector<string>* aidList) const
@@ -311,7 +313,7 @@ void DatabaseQueryManagerV2::getAllId(vector<string>* pidList, vector<string>* a
     }
 }
 
-bool DatabaseQueryManagerV2::getContentById(const char* id, DataRecord* dataRecord) const
+bool DatabaseQueryManagerV2::getContentById(const char* id, DataRecordV2* dataRecord) const
 {
     const IndexValue* iv;
     if (!(iv = getInfoById(id))) {
@@ -320,17 +322,13 @@ bool DatabaseQueryManagerV2::getContentById(const char* id, DataRecord* dataReco
         return false;
     }
 
-    std::string binFilename = getBinFilenameWithBinId(iv->binId);
+    const DataRecordFileReader& dataRecordFile = dataRecordFileByBinId_.at(iv->binId);
 
-    DataRecordFile dataRecordFile;
-    dataRecordFile.readFromFile(binFilename.c_str());
-
-    return dataRecordFile.GetDataRecordAtOffset(iv->offset, dataRecord);
+    return dataRecordFile.getDataRecordAtOffset(iv->offset, dataRecord);
 }
 
 const IndexValue* DatabaseQueryManagerV2::getInfoById(const char* id) const
 {
-
     if (pidTable_.find(id) != pidTable_.end()) {
         return pidTable_.at(id);
     }

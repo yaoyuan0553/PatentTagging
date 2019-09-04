@@ -11,6 +11,7 @@
 #include <map>
 #include <unordered_map>
 #include <iostream>
+#include <fstream>
 
 #include "DataBasicTypes.h"
 #include "DataTypes.h"
@@ -24,8 +25,6 @@ class IndexValueList : public std::vector<const IndexValue*> {
 public:
     friend std::ostream& operator<<(std::ostream& os, const IndexValueList& ivl);
     friend std::istream& operator>>(std::istream& is, IndexValueList& ivl);
-    // collect memory in IndexValue*
-    ~IndexValueList();
 };
 
 /**
@@ -47,18 +46,19 @@ private:
 public:
 
     explicit IndexTableV2(const char* filename, bool hasHeader = true);
+    ~IndexTableV2();
 
     inline size_t numRecords() const { return indexValueList_.size(); }
 
     /* read-only accesses */
-    const IndexValueList&           indexValueList() const  { return indexValueList_; }
-    const decltype(pid2Index_)&     pid2Index() const       { return pid2Index_; }
-    const decltype(aid2Index_)&     aid2Index() const       { return aid2Index_; }
-    const decltype(binId2Index_)&   binId2Index() const     { return binId2Index_; }
+    inline const IndexValueList&           indexValueList() const  { return indexValueList_; }
+    inline const decltype(pid2Index_)&     pid2Index() const       { return pid2Index_; }
+    inline const decltype(aid2Index_)&     aid2Index() const       { return aid2Index_; }
+    inline const decltype(binId2Index_)&   binId2Index() const     { return binId2Index_; }
 
-    const IndexValueList&   binId2Index(uint32_t binId) const       { return binId2Index_.at(binId); }
-    const IndexValue*       pid2Index(const std::string& pid) const { return pid2Index_.at(pid); }
-    const IndexValue*       aid2Index(const std::string& aid) const { return aid2Index_.at(aid); }
+    inline const IndexValueList&   binId2Index(uint32_t binId) const       { return binId2Index_.at(binId); }
+    inline const IndexValue*       pid2Index(const std::string& pid) const { return pid2Index_.at(pid); }
+    inline const IndexValue*       aid2Index(const std::string& aid) const { return aid2Index_.at(aid); }
 };
 
 

@@ -31,12 +31,6 @@ istream& operator>>(istream& is, IndexValueList& ivl)
     return is;
 }
 
-IndexValueList::~IndexValueList()
-{
-    for (const IndexValue* iv : *this)
-        delete iv;
-}
-
 
 IndexTableV2::IndexTableV2(const char* filename, bool hasHeader)
 {
@@ -55,8 +49,14 @@ IndexTableV2::IndexTableV2(const char* filename, bool hasHeader)
     for (const IndexValue* iv : indexValueList_) {
         binId2Index_[iv->binId].push_back(iv);
         pid2Index_[iv->pid] = iv;
-        aid2Index_[iv->pid] = iv;
+        aid2Index_[iv->aid] = iv;
     }
 
     ifs.close();
+}
+
+IndexTableV2::~IndexTableV2()
+{
+    for (const IndexValue* iv : indexValueList_)
+        delete iv;
 }

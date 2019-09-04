@@ -191,7 +191,7 @@ class ObjectConstructionFailure : public std::exception {
 public:
     ObjectConstructionFailure(const std::string& msg = "construction failed") : msg_(msg) { }
 
-    [[nodiscard]] const char* what() const noexcept override { return msg_.c_str(); }
+    const char* what() const noexcept override { return msg_.c_str(); }
 };
 
 

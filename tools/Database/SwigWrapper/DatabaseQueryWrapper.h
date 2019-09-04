@@ -290,7 +290,7 @@ public:
      * @param dataRecord    OUTPUT: retrieved dataRecord, null if not found
      * @return              true if found, false if not found
      */
-    bool getContentById(const char* id, DataRecord* dataRecord) const;
+    bool getContentById(const char* id, DataRecordV2* dataRecord) const;
 
     /**
      * @brief retrieves a single document's title/abstract/claim/description with a given PID or AID
