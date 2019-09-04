@@ -35,3 +35,5 @@ target_include_directories(
         ${SWIG_WRAPPER_SRC_DIR}
         ${SWIG_CPP_SRC_DIR}/include
 )
+
+target_link_libraries(DatabaseQueryPython XmlSharedTools)

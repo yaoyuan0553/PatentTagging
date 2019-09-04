@@ -6,6 +6,7 @@ for version 2 of DatabaseQueryManager
 
 import DatabaseQueryPython as dq
 import tqdm
+import random
 
 dqm = dq.DatabaseQueryManagerV2("/media/yuan/Samsung_T5/patent_data/test/index.tsv",
                                 "/media/yuan/Samsung_T5/patent_data/test/data")
@@ -28,7 +29,8 @@ info0 = dqm.getInfoById(pidList[0])
 
 print(info0.stringify())
 
-
+print("\ntesting speed of getContentById (unshuffled)")
+# random.shuffle(pidList)
 for pid in tqdm.tqdm(pidList):
     dr = dq.DataRecordV2()
     dqm.getContentById(pid, dr)

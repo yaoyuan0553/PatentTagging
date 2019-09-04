@@ -295,8 +295,9 @@ DatabaseQueryManagerV2::DatabaseQueryManagerV2(
         aidTable_(indexTable_.aid2Index())
 {
     // initialize all dataRecordFile's corresponding to the bin IDs
-    for (auto [binId, _] : indexTable_.binId2Index())
+    for (auto [binId, _] : indexTable_.binId2Index()) {
         dataRecordFileByBinId_.emplace(binId, getBinFilenameWithBinId(binId).c_str());
+    }
 }
 
 void DatabaseQueryManagerV2::getAllId(vector<string>* pidList, vector<string>* aidList) const
@@ -355,7 +356,7 @@ void DatabaseQueryManagerV2::getInfoByIdList(
 }
 
 void DatabaseQueryManagerV2::getContentByIdList(const vector<string>& idList,
-                                              vector<shared_ptr<IdDataRecord>>* idDataRecordList) const
+        vector<shared_ptr<IdDataRecord>>* idDataRecordList) const
 {
     vector<const IndexValue*> infoList;
     getInfoByIdList(idList, &infoList);
@@ -453,3 +454,20 @@ void DatabaseQueryManagerV2::getContentPartByIdList(const std::vector<std::strin
     }
 }
 
+DatabaseQueryManagerV2::DataRecordFileReaderThread::DataRecordFileReaderThread(
+        uint32_t binId,
+        const DataRecordFileReader& dataRecordFileReader) :
+        binId_(binId), dataRecordFileReader_(dataRecordFileReader),
+        idQueue_(MAX_PC_QUEUE_SIZE, WRITE_AHEAD, N_CONSUMERS) { }
+
+void DatabaseQueryManagerV2::DataRecordFileReaderThread::internalRun()
+{
+    for (;;)
+    {
+        auto [id, quit] = idQueue_.pop();
+
+        if (quit) break;
+
+
+    }
+}

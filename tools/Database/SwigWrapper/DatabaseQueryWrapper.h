@@ -8,11 +8,14 @@
 
 #include <string>
 #include <thread>
+#include <memory>
 
+#include "ThreadJob.h"
 #include "DataTypes.h"
 
 #include "DataRecordFileV2.h"
 #include "IndexTableV2.h"
+#include "ConcurrentBlockingStaticQueue.h"
 
 void hello();
 
@@ -209,6 +212,22 @@ uint32_t DatabaseQueryManager::getIndexByContentPartType(const IndexValue* iv, C
  ****************************************************/
 class DatabaseQueryManagerV2 {
 
+    class DataRecordFileReaderThread : public ThreadJob<> {
+        /*! constants */
+        inline static constexpr int MAX_PC_QUEUE_SIZE = 1 << 10;
+        inline static constexpr int WRITE_AHEAD = 1 << 10;
+        inline static constexpr int N_CONSUMERS = 1;
+
+        uint32_t binId_;
+        const DataRecordFileReader& dataRecordFileReader_;
+        CBSQueue<std::string> idQueue_;
+        void internalRun() final;
+    public:
+        DataRecordFileReaderThread(uint32_t binId, const DataRecordFileReader& dataRecordFileReader);
+
+        inline CBSQueue<std::string>& idQueue() { return idQueue_; }
+    };
+
     inline static constexpr uint32_t INVALID = -1;
 
     const std::string indexFilename_;
@@ -221,6 +240,8 @@ class DatabaseQueryManagerV2 {
     const IndexTableV2::IdIndexTable& aidTable_;
 
     std::unordered_map<uint32_t, const DataRecordFileReader> dataRecordFileByBinId_;
+
+    std::unordered_map<uint32_t, std::unique_ptr<CBSQueue<std::string>>> dataRecordFileReaderThreads_;
 
 public:
     enum ContentPartType {
