@@ -342,6 +342,13 @@ public:
     void getContentByIdList(const std::vector<std::string>& idList,
                             std::vector<std::shared_ptr<IdDataRecord>>* idDataRecordList) const;
 
+    /**
+     * @brief retrieves a collection of parsed XML text body with a 
+     * @param dataRecordById
+     */
+    void getContentByPidList(std::unordered_map<std::string, DataRecordV2>& dataRecordById);
+
+
 private:
 
     inline bool checkIndexByContentPartType(ContentPartType cpt) const;

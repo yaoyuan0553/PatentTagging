@@ -454,6 +454,13 @@ void DatabaseQueryManagerV2::getContentPartByIdList(const std::vector<std::strin
     }
 }
 
+void DatabaseQueryManagerV2::getContentByPidList(
+        std::unordered_map<std::string, DataRecordV2>&
+        dataRecordById)
+{
+
+}
+
 DatabaseQueryManagerV2::DataRecordFileReaderThread::DataRecordFileReaderThread(
         uint32_t binId,
         const DataRecordFileReader& dataRecordFileReader) :
