@@ -31,6 +31,8 @@
 %{
 #include "DatabaseQueryWrapper.h"
 #include "DataBasicTypes.h"
+#include "DataRecordFileV2.h"
+#include "IndexTableV2.h"
 %}
 
 
@@ -57,6 +59,8 @@ namespace std {
 
 %include "DatabaseQueryWrapper.h"
 %include "DataBasicTypes.h"
+%include "IndexTableV2.h"
+%include "DataRecordFileV2.h"
 
 %template(PairII) Pair<int, int>;
 

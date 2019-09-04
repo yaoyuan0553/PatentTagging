@@ -276,3 +276,182 @@ void DatabaseQueryManager::getContentPartByIdList(const std::vector<std::string>
     }
 }
 
+
+
+/*******************************************************
+ *      DatabaseQueryManager Version 2                 *
+ *******************************************************/
+
+DatabaseQueryManagerV2::DatabaseQueryManagerV2(
+        const char* indexFilename,
+        const char* dataPath,
+        const char* dataFilePrefix) :
+
+        indexFilename_(indexFilename),
+        dataPath_(dataPath),
+        dataFilePrefix_(dataFilePrefix),
+        indexTable_(indexFilename),
+        pidTable_(indexTable_.pid2Index()),
+        aidTable_(indexTable_.aid2Index())
+{
+
+}
+
+void DatabaseQueryManagerV2::getAllId(vector<string>* pidList, vector<string>* aidList) const
+{
+    if (pidList != nullptr) {
+        pidList->reserve(pidTable_.size());
+        for (const auto& [pid, _] : pidTable_)
+            pidList->push_back(pid);
+    }
+    if (aidList != nullptr) {
+        aidList->reserve(aidTable_.size());
+        for (const auto& [aid, _] : aidTable_)
+            aidList->push_back(aid);
+    }
+}
+
+bool DatabaseQueryManagerV2::getContentById(const char* id, DataRecord* dataRecord) const
+{
+    const IndexValue* iv;
+    if (!(iv = getInfoById(id))) {
+        fprintf(stderr, "%s: ID [%s] does not exist in database\n",
+                __FUNCTION__, id);
+        return false;
+    }
+
+    std::string binFilename = getBinFilenameWithBinId(iv->binId);
+
+    DataRecordFile dataRecordFile;
+    dataRecordFile.readFromFile(binFilename.c_str());
+
+    return dataRecordFile.GetDataRecordAtOffset(iv->offset, dataRecord);
+}
+
+const IndexValue* DatabaseQueryManagerV2::getInfoById(const char* id) const
+{
+
+    if (pidTable_.find(id) != pidTable_.end()) {
+        return pidTable_.at(id);
+    }
+    if (aidTable_.find(id) != aidTable_.end()) {
+        return aidTable_.at(id);
+    }
+    // id not found
+    fprintf(stderr, "%s: ID [%s] does not exist in database\n",
+            __FUNCTION__, id);
+
+    return nullptr;
+}
+
+
+void DatabaseQueryManagerV2::getInfoByIdList(
+        const std::vector<std::string>& idList, std::vector<const IndexValue*>* output) const
+{
+    for (const auto& id : idList) {
+        const IndexValue* iv;
+        if (!(iv = getInfoById(id.c_str())))
+            continue;
+        output->push_back(iv);
+    }
+}
+
+void DatabaseQueryManagerV2::getContentByIdList(const vector<string>& idList,
+                                              vector<shared_ptr<IdDataRecord>>* idDataRecordList) const
+{
+    vector<const IndexValue*> infoList;
+    getInfoByIdList(idList, &infoList);
+
+    if (infoList.empty()) {
+        fprintf(stderr, "%s: no IDs found\n", __FUNCTION__);
+        return;
+    }
+    /* get all binId of data files needed to be opened */
+    std::unordered_map<uint32_t, std::vector<const IndexValue*>> indexByBinId;
+    for (const IndexValue* info : infoList) {
+        indexByBinId[info->binId].push_back(info);
+    }
+    idDataRecordList->reserve(idList.size());
+
+    // TODO: optimize for caching
+    for (const auto& [binId, ivList]: indexByBinId) {
+        DataRecordFile dataFile;
+        std::string binName = getBinFilenameWithBinId(binId);
+        dataFile.readFromFile(binName.c_str());
+        /* read whole request if more than 1/3 of records must be accessed  */
+        if (ivList.size() > dataFile.numRecords() / 3)
+            dataFile.readFromFileFull(binName.c_str());
+
+        for (const IndexValue* iv : ivList) {
+            idDataRecordList->emplace_back(new IdDataRecord);
+            if (!dataFile.GetDataRecordAtOffset(iv->offset,
+                                                &idDataRecordList->back()->dataRecord))
+                continue;
+            idDataRecordList->back()->pid = iv->pid;
+            idDataRecordList->back()->aid = iv->aid;
+        }
+    }
+}
+
+bool DatabaseQueryManagerV2::getContentPartById(const char* id, ContentPartType cpt, std::string* contentPart) const
+{
+    const IndexValue* iv;
+    if (!(iv = getInfoById(id))) {
+        fprintf(stderr, "%s: ID [%s] does not exist in database\n",
+                __FUNCTION__, id);
+        return false;
+    }
+
+    std::string binFilename = getBinFilenameWithBinId(iv->binId);
+
+    DataRecordFile dataRecordFile;
+    dataRecordFile.readFromFile(binFilename.c_str());
+
+    uint32_t index = getIndexByContentPartType(iv, cpt);
+    if (index == INVALID)
+        return false;
+
+    return dataRecordFile.GetDataAtOffsetIndex(iv->offset, index, contentPart);
+}
+
+void DatabaseQueryManagerV2::getContentPartByIdList(const std::vector<std::string>& idList,
+                                                  DatabaseQueryManagerV2::ContentPartType contentPartType,
+                                                  std::vector<IdDataPart>* idContentPartList) const
+{
+    if (!checkIndexByContentPartType(contentPartType))
+        return;
+
+    vector<const IndexValue*> infoList;
+    getInfoByIdList(idList, &infoList);
+
+    if (infoList.empty()) {
+        fprintf(stderr, "%s: no IDs found\n", __FUNCTION__);
+        return;
+    }
+    /* get all binId of data files needed to be opened */
+    std::unordered_map<uint32_t, std::vector<const IndexValue*>> indexByBinId;
+    for (const IndexValue* info : infoList) {
+        indexByBinId[info->binId].push_back(info);
+    }
+    idContentPartList->reserve(idList.size());
+
+    for (const auto& [binId, ivList]: indexByBinId) {
+        DataRecordFile dataFile;
+        std::string binName = getBinFilenameWithBinId(binId);
+        dataFile.readFromFile(binName.c_str());
+        /* read whole request if more than 1/3 of records must be accessed  */
+        if (ivList.size() > dataFile.numRecords() / 3)
+            dataFile.readFromFileFull(binName.c_str());
+
+        for (const IndexValue* iv : ivList) {
+            idContentPartList->emplace_back();
+            uint32_t index = getIndexByContentPartType(iv, contentPartType);
+            // note: no need to check for INVALID since we already checked at the beginning of this function
+            if (!dataFile.GetDataAtOffsetIndex(iv->offset, index, &idContentPartList->back().dataPart))
+                continue;
+            idContentPartList->back().pid = iv->pid;
+            idContentPartList->back().aid = iv->aid;
+        }
+    }
+}
+

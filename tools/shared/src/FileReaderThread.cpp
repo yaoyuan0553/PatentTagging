@@ -27,7 +27,9 @@ void FileReaderThread::internalRun()
             PERROR("fopen()");
         }
 
-        fread(buffer, sizeof(char), bytes, inputFile);
+        auto bytesRead = fread(buffer, sizeof(char), bytes, inputFile);
+        if (bytesRead != bytes)
+            PERROR("fread() bytes read %zu differs from requested bytes %zu", bytesRead, bytes);
 
         batchOutput_.emplace_back(XmlFile{filename, buffer, bytes});
 

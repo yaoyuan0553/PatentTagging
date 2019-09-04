@@ -33,15 +33,19 @@ public:
  * @details loads on-disk IndexTable upon construction and all values are read-only
  */
 class IndexTableV2 {
+public:
+    using IdIndexTable = std::unordered_map<std::string, const IndexValue*>;
+private:
     /* data storage */
     IndexValueList indexValueList_;
 
     /* 3-way look up  using binId, PID, and AID */
     std::unordered_map<uint32_t, IndexValueList> binId2Index_;
-    std::unordered_map<std::string, const IndexValue*> pid2Index_;
-    std::unordered_map<std::string, const IndexValue*> aid2Index_;
+    IdIndexTable pid2Index_;
+    IdIndexTable aid2Index_;
 
 public:
+
     explicit IndexTableV2(const char* filename, bool hasHeader = true);
 
     inline size_t numRecords() const { return indexValueList_.size(); }
@@ -50,11 +54,11 @@ public:
     const IndexValueList&           indexValueList() const  { return indexValueList_; }
     const decltype(pid2Index_)&     pid2Index() const       { return pid2Index_; }
     const decltype(aid2Index_)&     aid2Index() const       { return aid2Index_; }
-    const decltype(binId2Index_)&   binId2Index() const      { return binId2Index_; }
+    const decltype(binId2Index_)&   binId2Index() const     { return binId2Index_; }
 
-    const IndexValueList& binId2Index(uint32_t binId) const { return binId2Index_.at(binId); }
-    const IndexValue* pid2Index(const std::string& pid) const { return pid2Index_.at(pid); }
-    const IndexValue* aid2Index(const std::string& aid) const { return aid2Index_.at(aid); }
+    const IndexValueList&   binId2Index(uint32_t binId) const       { return binId2Index_.at(binId); }
+    const IndexValue*       pid2Index(const std::string& pid) const { return pid2Index_.at(pid); }
+    const IndexValue*       aid2Index(const std::string& aid) const { return aid2Index_.at(aid); }
 };
 
 

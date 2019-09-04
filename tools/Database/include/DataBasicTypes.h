@@ -8,7 +8,10 @@
 
 #include <string>
 
+#include <unistd.h>
+
 #include "Helper.h"
+#include "Utility.h"
 
 
 /**
@@ -128,6 +131,79 @@ struct IdDataPart {
     std::string pid;
     std::string aid;
     std::string dataPart;
+};
+
+struct DataRecordV2 : Stringifiable {
+    uint32_t recordSize = 0;
+    std::string title;
+    std::string abstract;
+    std::string claim;
+    std::string description;
+
+    DataRecordV2() = default;
+
+    /**
+     * @brief initialize the DataRecord through reading file from an opened file descriptor
+     * @param fileHandle    file handle obtained by open()
+     * @param offset        offset to start reading
+     * @param maxOffset     maximum offset legal for the file i.e. boundary of the file
+     */
+    DataRecordV2(int fileHandle, uint64_t offset, uint64_t maxOffset)
+    {
+        // read in record size first
+        if (pread(fileHandle, &recordSize, sizeof(recordSize), offset) == -1)
+            throw ObjectConstructionFailure("pread() error");
+
+        // check record size
+        if (offset + recordSize > maxOffset)
+            throw ObjectConstructionFailure("recordSize exceeds file boundary");
+
+        char* buf = new char[recordSize];
+        char* curBuf = buf + sizeof(uint32_t);
+        // read the rest of the record data with given record size
+        if (pread(fileHandle, buf + sizeof(uint32_t), recordSize - sizeof(uint32_t),
+                offset + sizeof(uint32_t)) == -1)
+            throw ObjectConstructionFailure("pread() error");
+
+#define COPY_AND_INCR(field)                                                \
+    do {                                                                    \
+        uint32_t size = *(uint32_t*)curBuf;                                 \
+        curBuf += sizeof(uint32_t);                                         \
+        if (curBuf - buf + (uint64_t)size > maxOffset)                      \
+            throw ObjectConstructionFailure("size exceeds file boundary");  \
+        field = std::string(curBuf, curBuf + size);                         \
+        curBuf += size;                                                     \
+    } while (0)
+
+        COPY_AND_INCR(title);
+        COPY_AND_INCR(abstract);
+        COPY_AND_INCR(claim);
+        COPY_AND_INCR(description);
+
+        delete[] buf;
+    }
+#undef COPY_AND_INCR
+
+    DataRecordV2& operator=(DataRecordV2&& other) noexcept
+    {
+        recordSize = other.recordSize;
+        title = std::move(other.title);
+        abstract = std::move(other.abstract);
+        claim = std::move(other.claim);
+        description = std::move(other.description);
+
+        return *this;
+    }
+
+    inline std::string stringify() const override
+    {
+        return ConcatStringWithDelimiter("\n",
+                "<(title)>: " + title,
+                "<(abstract)>: " + abstract,
+                "<(claim)>: " + claim,
+                "<(description)>: " + description);
+    }
+
 };
 
 #endif //TOOLS_DATABASICTYPES_H

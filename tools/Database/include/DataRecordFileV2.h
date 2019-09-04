@@ -12,19 +12,34 @@
 
 
 class DataRecordFileV2 {
+    /*! binary data, accessible only through getter function buf() */
+    char* buf_;
+
+    /*! number of bytes allocated for buf_ */
+    uint64_t capacity_;
+
+    /*!
+     * @brief malloc and checks for error, used in constructor initialization list
+     * @param size number of bytes to allocate
+     * @return allocated buffer
+     */
+    inline static void* checkMalloc(size_t size);
+
 protected:
-    /*! binary data */
-    char* const buf_;
     /*! keeps track of number of bytes used in buf_ */
     uint64_t& nBytes_;
     /*! keeps track of number of records stored in buf_ */
     uint32_t& nRecords_;
 
-    uint64_t capacity_;
-
-    inline static constexpr auto FILE_HEAD_SIZE =
+    inline static constexpr size_t FILE_HEAD_SIZE =
             sizeof(decltype(nBytes_)) +
             sizeof(decltype(nRecords_));
+
+    /*!
+     * @brief provides access to internal buffer buf_
+     * @return buf_
+     */
+    inline char* buf() const { return buf_; }
 
     /**
      * @brief initializes the file to be only the headers
@@ -36,20 +51,32 @@ protected:
 
 public:
     /*! @brief releases all memory allocated under buf_ */
-    ~DataRecordFileV2();
+    virtual ~DataRecordFileV2();
+
+    /*! @brief request for a resize of the buffer buf_ */
+    void reserve(size_t newSize);
 
     /*! total bytes allocated */
-    [[nodiscard]] inline uint32_t capacity() const { return capacity_; }
+    inline uint32_t capacity() const { return capacity_; }
 
     /*! total bytes of data written to the buffer */
-    [[nodiscard]] inline uint32_t numBytes() const { return nBytes_; }
+    inline uint32_t numBytes() const { return nBytes_; }
 
     /*! current number of records in the buffer */
-    [[nodiscard]] inline uint32_t numRecords() const { return nRecords_; }
+    inline uint32_t numRecords() const { return nRecords_; }
 
     /* returns true if number of records is 0 */
-    [[nodiscard]] inline bool empty() const { return nRecords_ == 0; }
+    inline bool empty() const { return nRecords_ == 0; }
 };
+
+
+inline void* DataRecordFileV2::checkMalloc(size_t size)
+{
+    if (void* buf = malloc(size); buf)
+        return buf;
+
+    PSYS_FATAL("malloc()");
+}
 
 
 class DataRecordFileWriter : DataRecordFileV2, public FileWritable {
@@ -82,7 +109,7 @@ public:
 
     explicit DataRecordFileWriter(size_t maxFileSize);
 
-    [[nodiscard]] inline const IndexValueList& indexValueList() const { return indexValueList_; }
+    inline const IndexValueList& indexValueList() const { return indexValueList_; }
 
     inline std::string generateFilename(const char* prefix) const
     {
@@ -104,10 +131,21 @@ inline void DataRecordFileWriter::obtainBinId()
 
 
 class DataRecordFileReader : DataRecordFileV2 {
-    inline void openDataFile(const char* dataFilename);
+
+    const std::string filename_;
+    int fileHandle_;
+
+    void openDataFile();
+    void closeDataFile();
+
 public:
     explicit DataRecordFileReader(const char* dataFilename);
+    ~DataRecordFileReader() override;
+
+    bool getDataRecordAtOffset(uint64_t offset, DataRecordV2* dataRecord) const;
 };
+
+
 
 
 #endif //TOOLS_DATARECORDFILEV2_H
