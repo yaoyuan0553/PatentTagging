@@ -292,11 +292,14 @@ DatabaseQueryManagerV2::DatabaseQueryManagerV2(
         dataFilePrefix_(dataFilePrefix),
         indexTable_(indexFilename),
         pidTable_(indexTable_.pid2Index()),
-        aidTable_(indexTable_.aid2Index())
+        aidTable_(indexTable_.aid2Index()),
+        allThreadFinished_(indexTable_.binId2Index().size() + 1)
 {
     // initialize all dataRecordFile's corresponding to the bin IDs
     for (auto [binId, _] : indexTable_.binId2Index()) {
         dataRecordFileByBinId_.emplace(binId, getBinFilenameWithBinId(binId).c_str());
+        readerThreadsByBinId_.emplace(binId, new DataRecordFileReaderThread(binId, *this));
+        readerThreadsByBinId_[binId]->run();
     }
 }
 
@@ -454,27 +457,75 @@ void DatabaseQueryManagerV2::getContentPartByIdList(const std::vector<std::strin
     }
 }
 
-void DatabaseQueryManagerV2::getContentByPidList(
-        std::unordered_map<std::string, DataRecordV2>&
-        dataRecordById)
+void DatabaseQueryManagerV2::getContentByPidList(unordered_map<string, shared_ptr<DataRecordV2>>& dataRecordById)
 {
+    // set the inout parameters for threads
+    for (auto& [_, readerThread] : readerThreadsByBinId_)
+        readerThread->setInoutDataRecordById(&dataRecordById);
 
+    // push all id's into different thread's queue sorted by binId
+    for (auto& [pid, dr] : dataRecordById)
+    {
+        readerThreadsByBinId_[pidTable_.at(pid)->binId]->idQueue().push(pid);
+    }
+    // notify all threads to finish
+    for (auto& [_, readerThread] : readerThreadsByBinId_)
+        readerThread->idQueue().setQuitSignal();
+
+    // blocks until all threads finishes
+    allThreadFinished_.wait();
+
+    // resets every thread's queue for next run
+    for (auto& [_, readerThread] : readerThreadsByBinId_)
+        readerThread->idQueue().reset();
+}
+
+DatabaseQueryManagerV2::~DatabaseQueryManagerV2()
+{
+    readerThreadExit = true;
+
+    for (auto& [_, readerThread] : readerThreadsByBinId_)
+        readerThread->idQueue().setQuitSignal();
+
+    for (auto& [_, readerThread] : readerThreadsByBinId_)
+        readerThread->wait();
 }
 
 DatabaseQueryManagerV2::DataRecordFileReaderThread::DataRecordFileReaderThread(
         uint32_t binId,
-        const DataRecordFileReader& dataRecordFileReader) :
-        binId_(binId), dataRecordFileReader_(dataRecordFileReader),
+        DatabaseQueryManagerV2& databaseQueryManager) :
+        binId_(binId), databaseQueryManager_(databaseQueryManager),
+        dataRecordFileReader_(databaseQueryManager_.dataRecordFileByBinId_.at(binId)),
         idQueue_(MAX_PC_QUEUE_SIZE, WRITE_AHEAD, N_CONSUMERS) { }
+
 
 void DatabaseQueryManagerV2::DataRecordFileReaderThread::internalRun()
 {
     for (;;)
     {
+        // when idQueue is empty, thread is blocked here
         auto [id, quit] = idQueue_.pop();
 
-        if (quit) break;
+        if (quit) {
+            if (databaseQueryManager_.readerThreadExit) break;
 
+            databaseQueryManager_.allThreadFinished_.wait();
+            continue;
+        }
 
+        if (!inoutDataRecordById_)
+            PERROR("inoutDataRecordById_ is null");
+
+        const IndexValue* iv;
+        if (!(iv = databaseQueryManager_.getInfoById(id.c_str()))) {
+            fprintf(stderr, "%s: ID [%s] does not exist in database\n",
+                    __FUNCTION__, id.c_str());
+            continue;
+        }
+        // write result to inout corresponding value field of the key-value pair
+        // note: that this won't need locks or synchronization since keys are unique
+        // and we are not inserting keys, but only individually distinct values
+        dataRecordFileReader_.getDataRecordAtOffset(iv->offset, inoutDataRecordById_->at(id).get());
     }
 }
+

@@ -20,7 +20,7 @@ add_library(XmlSharedTools STATIC src/PatentTagTextCollector.cpp src/XmlPathFile
         include/XmlXpathIPOTagTextPrinterTester.h include/StaticQueue.h include/ConcurrentStaticQueue.h
         src/FileReaderThread.cpp include/FileReaderThread.h src/XmlBufferTagTextPrinterProcessorThread.cpp
         include/XmlBufferTagTextPrinterProcessorThread.h include/XmlBufferXpathIPOTagTextPrinterTester.h
-        src/Semaphore.cpp)
+        src/Semaphore.cpp src/Barrier.cpp)
 
 target_include_directories(XmlSharedTools PRIVATE
         ${CMAKE_SOURCE_DIR}/cpptqdm

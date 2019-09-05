@@ -125,6 +125,14 @@ public:
 
         produced_.release(maxConsumers_);
     }
+
+    /**
+     * @brief resets queue back to initial state, with quit flag being false
+     */
+    void reset()
+    {
+        quit_ = false;
+    }
 };
 
 

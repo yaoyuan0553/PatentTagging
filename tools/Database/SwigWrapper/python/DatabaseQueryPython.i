@@ -6,6 +6,7 @@
 
 %include "std_string.i"
 %include "std_vector.i"
+%include "std_unordered_map.i"
 %include "std_shared_ptr.i"
 %include "carrays.i"
 %include "cpointer.i"
@@ -13,6 +14,7 @@
 
 
 %shared_ptr(IdDataRecord);
+%shared_ptr(DataRecordV2);
 
 /* make IndexValue a read-only class */
 %immutable IndexValue::pid;
@@ -53,6 +55,8 @@ namespace std {
     %template(IdDataRecordVector) vector<shared_ptr<IdDataRecord>>;
 
     %template(IdDataPartVector) vector<IdDataPart>;
+
+    %template(UnorderedMapStringDataRecordV2) unordered_map<string, shared_ptr<DataRecordV2>>;
 };
 
 %include "DatabaseQueryWrapper.h"

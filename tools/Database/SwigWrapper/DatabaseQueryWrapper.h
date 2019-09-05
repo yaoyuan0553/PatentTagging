@@ -12,6 +12,7 @@
 
 #include "ThreadJob.h"
 #include "DataTypes.h"
+#include "Barrier.h"
 
 #include "DataRecordFileV2.h"
 #include "IndexTableV2.h"
@@ -219,13 +220,31 @@ class DatabaseQueryManagerV2 {
         inline static constexpr int N_CONSUMERS = 1;
 
         uint32_t binId_;
+        /*! @brief reference to be able to call query functions from threads */
+        DatabaseQueryManagerV2& databaseQueryManager_;
+
         const DataRecordFileReader& dataRecordFileReader_;
+
         CBSQueue<std::string> idQueue_;
+
+        /*! @brief input-output parameter, can be updated by setter */
+        std::unordered_map<std::string, std::shared_ptr<DataRecordV2>>* inoutDataRecordById_;
+
         void internalRun() final;
+
     public:
-        DataRecordFileReaderThread(uint32_t binId, const DataRecordFileReader& dataRecordFileReader);
+        DataRecordFileReaderThread(uint32_t binId, DatabaseQueryManagerV2& databaseQueryManager);
 
         inline CBSQueue<std::string>& idQueue() { return idQueue_; }
+
+        /**
+         * @brief updates dataRecordById_ pointer used by internalRun()
+         * @param dataRecordById output dictionary to be updated
+         */
+        void setInoutDataRecordById(std::unordered_map<std::string, std::shared_ptr<DataRecordV2>>* dataRecordById)
+        {
+            inoutDataRecordById_ = dataRecordById;
+        }
     };
 
     inline static constexpr uint32_t INVALID = -1;
@@ -241,7 +260,12 @@ class DatabaseQueryManagerV2 {
 
     std::unordered_map<uint32_t, const DataRecordFileReader> dataRecordFileByBinId_;
 
-    std::unordered_map<uint32_t, std::unique_ptr<CBSQueue<std::string>>> dataRecordFileReaderThreads_;
+    /*! @brief barrier to synchronize all dataRecordReaderThreads after they finish loading data */
+    Barrier allThreadFinished_;
+
+    std::unordered_map<uint32_t, std::unique_ptr<DataRecordFileReaderThread>> readerThreadsByBinId_;
+
+    bool readerThreadExit = false;
 
 public:
     enum ContentPartType {
@@ -263,6 +287,8 @@ public:
             const char* dataPath,
             const char* dataFilePrefix = "patent-data"
     );
+
+    ~DatabaseQueryManagerV2();
 
     /**
      * @brief generate a full-path database bin filename with the given bin ID
@@ -343,10 +369,13 @@ public:
                             std::vector<std::shared_ptr<IdDataRecord>>* idDataRecordList) const;
 
     /**
-     * @brief retrieves a collection of parsed XML text body with a 
-     * @param dataRecordById
+     * @brief retrieves a collection of parsed XML text body with with given PIDs
+     * @details the keys of std::unordered_map are the request of PIDs, with default initialized
+     *          DataRecordV2's, and the output will be will be stored in the value of
+     *          std::unordered_map
+     * @param dataRecordById key - requested PIDs, value - output content
      */
-    void getContentByPidList(std::unordered_map<std::string, DataRecordV2>& dataRecordById);
+    void getContentByPidList(std::unordered_map<std::string, std::shared_ptr<DataRecordV2>>& dataRecordById);
 
 
 private:

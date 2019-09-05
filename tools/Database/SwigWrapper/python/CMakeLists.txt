@@ -25,7 +25,7 @@ swig_add_library(
             ${SWIG_CPP_SRC_DIR}/src/DataRecordFileV2.cpp
 )
 
-set_property(TARGET DatabaseQueryPython PROPERTY SWIG_COMPILE_OPTIONS -py3 -doxygen -fastproxy -olddefs)
+set_property(TARGET DatabaseQueryPython PROPERTY SWIG_COMPILE_OPTIONS -py3 -threads -doxygen -fastproxy -olddefs)
 
 target_include_directories(
         DatabaseQueryPython PRIVATE
