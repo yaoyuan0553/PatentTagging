@@ -26,14 +26,8 @@ class DataRecordFileV2 {
     inline static void* checkMalloc(size_t size);
 
 protected:
-    /*! keeps track of number of bytes used in buf_ */
-    uint64_t& nBytes_;
-    /*! keeps track of number of records stored in buf_ */
-    uint32_t& nRecords_;
 
-    inline static constexpr size_t FILE_HEAD_SIZE =
-            sizeof(decltype(nBytes_)) +
-            sizeof(decltype(nRecords_));
+    inline static constexpr size_t FILE_HEAD_SIZE = sizeof(uint64_t) + sizeof(uint32_t);
 
     /*!
      * @brief provides access to internal buffer buf_
@@ -60,16 +54,20 @@ public:
     void shrink(size_t newSize);
 
     /*! total bytes allocated */
-    inline uint32_t capacity() const { return capacity_; }
+    inline uint64_t capacity() const { return capacity_; }
 
     /*! total bytes of data written to the buffer */
-    inline uint32_t numBytes() const { return nBytes_; }
+    inline uint64_t& numBytes() { return *(uint64_t*)buf_; }
+
+    inline uint64_t& numBytes() const { return *(uint64_t*)buf_; }
 
     /*! current number of records in the buffer */
-    inline uint32_t numRecords() const { return nRecords_; }
+    inline uint32_t& numRecords() { return *(uint32_t*)(buf_ + sizeof(uint64_t)); }
+
+    inline const uint32_t& numRecords() const { return *(uint32_t*)(buf_ + sizeof(uint64_t)); }
 
     /* returns true if number of records is 0 */
-    inline bool empty() const { return nRecords_ == 0; }
+    inline bool empty() const { return numRecords() == 0; }
 };
 
 

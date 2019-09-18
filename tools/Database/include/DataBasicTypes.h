@@ -159,10 +159,13 @@ struct DataRecordV2 : Stringifiable {
         if (offset + recordSize > maxOffset)
             throw ObjectConstructionFailure("recordSize exceeds file boundary");
 
+        char* curBuf;
         if constexpr (IS_FILE) {
             buf = new char[recordSize];
+            curBuf = buf + sizeof(uint32_t);
         }
-        char* curBuf = buf + sizeof(uint32_t);
+        else
+            curBuf = buf + offset + sizeof(uint32_t);
         if constexpr (IS_FILE) {
             // read the rest of the record data with given record size
             if (pread(fileHandle, buf + sizeof(uint32_t), recordSize - sizeof(uint32_t),

@@ -269,7 +269,7 @@ class DatabaseQueryManagerV2 {
     /*! constants */
     inline static constexpr int MAX_PC_QUEUE_SIZE = 1 << 14;
     inline static constexpr int WRITE_AHEAD = 1 << 14;
-    inline static constexpr int N_CONSUMERS = 1;
+    inline static constexpr int N_CONSUMERS = 4;
 
     /** reader thread properties */
     ThreadPool readerThreadPool_;

@@ -513,7 +513,7 @@ DatabaseQueryManagerV2::~DatabaseQueryManagerV2()
 DatabaseQueryManagerV2::DataRecordFileReaderThread::DataRecordFileReaderThread(
         DatabaseQueryManagerV2& databaseQueryManager) :
         dqm_(databaseQueryManager), threadId_(nextThreadId_++),
-        ivOutputVecByBinId_(threadCount_)
+        ivOutputVecByBinId_(dqm_.dataRecordFileByBinId_.size())
 {
     if (threadCount_ == 0)
         PERROR("call setThreadCount() before constructor call!");
@@ -564,7 +564,7 @@ void DatabaseQueryManagerV2::DataRecordFileReaderThread::internalRun()
             continue;
         }
 
-        ivOutputVecByBinId_[iv->binId].emplace_back(iv, idOutput.second);
+        ivOutputVecByBinId_.at(iv->binId).emplace_back(iv, idOutput.second);
 //        dqm_.dataRecordFileByBinId_.at(iv->binId).getDataRecordAtOffset(iv->offset, idOutput.second);
     }
 }
@@ -602,6 +602,7 @@ void DatabaseQueryManagerV2::DataRecordFileReaderThread::requestData()
         // greater than division of MAGIC_NUM, then we read the whole file first then retrieve the data
         const bool readWholeFile =
                 ivOutputVecByBinId_[i].size() > dqm_.dataRecordFileByBinId_.at(i).numRecords() / MAGIC_NUM;
+        cout << dqm_.dataRecordFileByBinId_.at(i).numRecords() << '\n';
         if (readWholeFile) {
             dqm_.dataRecordFileByBinId_.at(i).loadAllData();
         }

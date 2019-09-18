@@ -8,12 +8,12 @@ using namespace std;
 
 DataRecordFileV2::DataRecordFileV2(uint64_t sizeToAllocate) :
         buf_((char*)checkMalloc(max(sizeToAllocate, FILE_HEAD_SIZE))),
-        capacity_(max(sizeToAllocate, FILE_HEAD_SIZE)),
-        nBytes_(*(uint64_t*)buf_),
-        nRecords_(*(uint32_t*)(buf_ + sizeof(decltype(nBytes_))))
+        capacity_(max(sizeToAllocate, FILE_HEAD_SIZE))
 {
-    nBytes_ = FILE_HEAD_SIZE;   // only 12 bytes are used
-    nRecords_ = 0;
+    numBytes() = FILE_HEAD_SIZE;
+    numRecords() = FILE_HEAD_SIZE;
+//    nBytes_ = FILE_HEAD_SIZE;   // only 12 bytes are used
+//    nRecords_ = 0;
 }
 
 DataRecordFileV2::~DataRecordFileV2()
@@ -25,8 +25,9 @@ void DataRecordFileV2::reserve(size_t newSize)
 {
     // if not larger, do nothing
     if (newSize <= capacity_) return;
+    capacity_ = newSize;
 
-    buf_ = (char*)realloc(buf_, newSize);
+    buf_ = (char*)realloc(buf_, capacity_);
     if (!buf_)
         PSYS_FATAL("realloc()");
 }
@@ -37,9 +38,9 @@ void DataRecordFileV2::shrink(size_t newSize)
     if (newSize >= capacity_) return;
 
     // can't be smaller than file head
-    newSize = max(newSize, FILE_HEAD_SIZE);
+    capacity_ = max(newSize, FILE_HEAD_SIZE);
 
-    buf_ = (char*)realloc(buf_, newSize);
+    buf_ = (char*)realloc(buf_, capacity_);
     if (!buf_)
         PSYS_FATAL("realloc()");
 }
@@ -92,12 +93,12 @@ bool DataRecordFileReader::getDataRecordAtOffset(uint64_t offset, DataRecordV2* 
 {
     try {
         if (allDataLoaded_)
-            *dataRecord = DataRecordV2(buf(), offset, nBytes_);
+            *dataRecord = DataRecordV2(buf(), offset, numBytes());
         else
-            *dataRecord = DataRecordV2(fileHandle_, offset, nBytes_);
+            *dataRecord = DataRecordV2(fileHandle_, offset, numBytes());
     }
     catch (ObjectConstructionFailure& ocf) {
-        fprintf(stderr, "DataRecord failed to construct: %s", ocf.what());
+        fprintf(stderr, "DataRecord failed to construct: %s\n", ocf.what());
         return false;
     }
     return true;
