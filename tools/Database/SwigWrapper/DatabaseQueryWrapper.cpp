@@ -597,12 +597,11 @@ void DatabaseQueryManagerV2::DataRecordFileReaderThread::setThreadCount(uint32_t
 
 void DatabaseQueryManagerV2::DataRecordFileReaderThread::requestData()
 {
-    constexpr int MAGIC_NUM = 5;
+    constexpr int MAGIC_NUM = 8;
     for (uint32_t i = binIdRange_.first; i < binIdRange_.second; i++) {
         // greater than division of MAGIC_NUM, then we read the whole file first then retrieve the data
         const bool readWholeFile =
                 ivOutputVecByBinId_[i].size() > dqm_.dataRecordFileByBinId_.at(i).numRecords() / MAGIC_NUM;
-        cout << dqm_.dataRecordFileByBinId_.at(i).numRecords() << '\n';
         if (readWholeFile) {
             dqm_.dataRecordFileByBinId_.at(i).loadAllData();
         }

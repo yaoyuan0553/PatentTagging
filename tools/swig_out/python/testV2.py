@@ -20,7 +20,9 @@ dqm.getAllId(pidList, aidList)
 print("\ngetAllId returned")
 print(pidList.size(), aidList.size())
 
-miniPidList = dq.StringVector(pidList[:2000])
+size = 100000
+miniPidList = dq.StringVector(random.choices(pidList, k=size))
+# miniPidList = dq.StringVector(pidList[:size])
 
 print(miniPidList.size())
 

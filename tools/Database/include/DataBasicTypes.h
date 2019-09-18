@@ -208,6 +208,7 @@ public:
 
     DataRecordV2() = default;
 
+#ifndef SWIG
     /**
      * @brief initialize a DataRecord through interpreting a pre-read buffer
      * @param buf       buffer in which the file is stored
@@ -262,6 +263,7 @@ public:
         delete[] buf;
     }
 #undef COPY_AND_INCR
+#endif
 
     DataRecordV2& operator=(DataRecordV2&& other) noexcept
     {
