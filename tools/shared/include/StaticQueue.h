@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "Utility.h"
 
 template <typename T>
 class StaticQueue {
@@ -32,6 +33,8 @@ public:
 
     void push(const T& item)
     {
+        if (full())
+            PERROR("trying to push into a full queue");
         // copy constructs
         buffer_[tail_] = item;
         curSize_++;
@@ -40,6 +43,8 @@ public:
 
     void emplace_push(T&& item)
     {
+        if (full())
+            PERROR("trying to push into a full queue");
         buffer_[tail_] = std::move(item);
         curSize_++;
         tail_ = (tail_ + 1) % maxSize_;
@@ -47,10 +52,9 @@ public:
 
     T pop()
     {
-        if (empty()) {
-            fprintf(stderr, "[FATAL] %s: trying to pop from an empty queue\n", __FUNCTION__);
-            exit(-1);
-        }
+        if (empty())
+            PERROR("trying to pop from an empty queue");
+
         curSize_--;
         auto oldHead = head_;
         head_ = (head_ + 1) % maxSize_;

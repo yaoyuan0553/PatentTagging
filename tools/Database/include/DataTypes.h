@@ -260,6 +260,8 @@ public:
             nBytesWritten_(*(uint64_t*)buf_),
             nRecordsWritten_(*(uint32_t*)(buf_ + sizeof(decltype(nBytesWritten_))))
     {
+        /* atomically obtains file id */
+        binId_ = nextBinId_.fetch_add(1);
         clear();
     }
 

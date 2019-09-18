@@ -54,5 +54,9 @@
 
 #include "XmlXpathIPOGenericInterface.h"
 
+#include "Semaphore.h"
+#include "Barrier.h"
+#include "ConcurrentBlockingStaticQueue.h"
+
 
 #endif //TOOLS_SHARED_H

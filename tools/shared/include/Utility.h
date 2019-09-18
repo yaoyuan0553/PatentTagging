@@ -183,4 +183,16 @@ struct Cloneable {
 using TagTextDict = std::unordered_map<std::string, std::vector<std::string>>;
 
 
+/**
+ * @brief exception category that can be thrown during object's construction in constructor
+ */
+class ObjectConstructionFailure : public std::exception {
+    std::string msg_;
+public:
+    ObjectConstructionFailure(const std::string& msg = "construction failed") : msg_(msg) { }
+
+    const char* what() const noexcept override { return msg_.c_str(); }
+};
+
+
 #endif //TOOLS_UTILITY_H

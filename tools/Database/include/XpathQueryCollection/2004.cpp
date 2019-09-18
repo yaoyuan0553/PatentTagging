@@ -86,7 +86,7 @@ std::string XpathIpcQuery2004::operator()(pugi::xml_node& root)
     for (const pugi::xpath_node& ipc : ipcNodes) {
         pugi::xpath_node_set subNodes = ipc.node().select_nodes(subNodesQuery_.pugiQuery());
 
-        if (subNodes.size() < 0) continue;
+        if (subNodes.size() == 0) continue;
 
         for(const auto i : subNodes){
             output += string(i.node().text().get()).substr(0,4) + '-' +

@@ -455,7 +455,7 @@ struct QueryUsage {
 
 #endif
 
-void testDatabaseQuery(int argc, char* argv[])
+void testDatabaseQuery(int, char* argv[])
 {
 //    if (argc != QueryUsage::ARGC)
 //        QueryUsage::printAndExit(argv[0]);

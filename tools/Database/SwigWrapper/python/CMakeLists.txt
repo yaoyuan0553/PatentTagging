@@ -20,7 +20,9 @@ swig_add_library(
         LANGUAGE python
         OUTPUT_DIR ${SWIG_OUT_DIR}
         OUTFILE_DIR ${SWIG_OUT_DIR}
-        SOURCES DatabaseQueryPython.i ${SWIG_WRAPPER_SRC_DIR}/DatabaseQueryWrapper.cpp ${SWIG_CPP_SRC_DIR}/src/DataTypes.cpp
+        SOURCES DatabaseQueryPython.i ${SWIG_WRAPPER_SRC_DIR}/DatabaseQueryWrapper.cpp
+            ${SWIG_CPP_SRC_DIR}/src/DataTypes.cpp ${SWIG_CPP_SRC_DIR}/src/IndexTableV2.cpp
+            ${SWIG_CPP_SRC_DIR}/src/DataRecordFileV2.cpp
 )
 
 set_property(TARGET DatabaseQueryPython PROPERTY SWIG_COMPILE_OPTIONS -py3 -doxygen -fastproxy -olddefs)
@@ -33,3 +35,5 @@ target_include_directories(
         ${SWIG_WRAPPER_SRC_DIR}
         ${SWIG_CPP_SRC_DIR}/include
 )
+
+target_link_libraries(DatabaseQueryPython XmlSharedTools)
