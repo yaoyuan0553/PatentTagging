@@ -9,6 +9,8 @@
 #include <thread>
 #include <chrono>
 
+#include <tqdm.h>
+
 using namespace std;
 
 void hello()
@@ -293,14 +295,16 @@ DatabaseQueryManagerV2::DatabaseQueryManagerV2(
         indexTable_(indexFilename),
         pidTable_(indexTable_.pid2Index()),
         aidTable_(indexTable_.aid2Index()),
-        allThreadFinished_(indexTable_.binId2Index().size() + 1)
+        idOutputQueue_(MAX_PC_QUEUE_SIZE, WRITE_AHEAD, N_CONSUMERS),
+        allThreadFinished_(N_CONSUMERS + 1)
 {
     // initialize all dataRecordFile's corresponding to the bin IDs
-    for (auto [binId, _] : indexTable_.binId2Index()) {
+    for (auto [binId, _] : indexTable_.binId2Index())
         dataRecordFileByBinId_.emplace(binId, getBinFilenameWithBinId(binId).c_str());
-        readerThreadsByBinId_.emplace(binId, new DataRecordFileReaderThread(binId, *this));
-        readerThreadsByBinId_[binId]->run();
-    }
+
+    DataRecordFileReaderThread::setThreadCount(N_CONSUMERS);
+    readerThreadPool_.add<N_CONSUMERS, DataRecordFileReaderThread>(*this);
+    readerThreadPool_.runAll();
 }
 
 void DatabaseQueryManagerV2::getAllId(vector<string>* pidList, vector<string>* aidList) const
@@ -442,7 +446,7 @@ void DatabaseQueryManagerV2::getContentPartByIdList(const std::vector<std::strin
         std::string binName = getBinFilenameWithBinId(binId);
         dataFile.readFromFile(binName.c_str());
         /* read whole request if more than 1/3 of records must be accessed  */
-        if (ivList.size() > dataFile.numRecords() / 3)
+        if (ivList.size() > dataFile.numRecords() / 4)
             dataFile.readFromFileFull(binName.c_str());
 
         for (const IndexValue* iv : ivList) {
@@ -457,46 +461,75 @@ void DatabaseQueryManagerV2::getContentPartByIdList(const std::vector<std::strin
     }
 }
 
-void DatabaseQueryManagerV2::getContentByPidList(unordered_map<string, shared_ptr<DataRecordV2>>& dataRecordById)
+/*void DatabaseQueryManagerV2::getContentByPidList(unordered_map<string, shared_ptr<DataRecordV2>>& dataRecordById)
 {
-    // set the inout parameters for threads
-    for (auto& [_, readerThread] : readerThreadsByBinId_)
-        readerThread->setInoutDataRecordById(&dataRecordById);
-
-    // push all id's into different thread's queue sorted by binId
+    tqdm bar;
+    int i = 0;
     for (auto& [pid, dr] : dataRecordById)
     {
-        readerThreadsByBinId_[pidTable_.at(pid)->binId]->idQueue().push(pid);
+        idOutputQueue_.emplace_push(pair{pid, dr.get()});
+        bar.progress(++i, dataRecordById.size());
     }
-    // notify all threads to finish
-    for (auto& [_, readerThread] : readerThreadsByBinId_)
-        readerThread->idQueue().setQuitSignal();
+    bar.finish();
+    // finish producing inout for reader threads
+    idOutputQueue_.setQuitSignal();
 
     // blocks until all threads finishes
     allThreadFinished_.wait();
 
-    // resets every thread's queue for next run
-    for (auto& [_, readerThread] : readerThreadsByBinId_)
-        readerThread->idQueue().reset();
+    // resets queue for next run
+    idOutputQueue_.reset();
+}*/
+
+void DatabaseQueryManagerV2::getContentByPidList(unordered_map<string, shared_ptr<DataRecordV2>>& dataRecordById)
+{
+    tqdm bar;
+    int i = 0;
+    for (const auto& [pid, dr] : dataRecordById)
+    {
+        idOutputQueue_.emplace_push(pair{pid, dr.get()});
+        bar.progress(++i, dataRecordById.size());
+    }
+    bar.finish();
+    // finish producing inout for reader threads
+    idOutputQueue_.setQuitSignal();
+
+    // blocks until all threads finishes
+    allThreadFinished_.wait();
+
+    // resets queue for next run
+    idOutputQueue_.reset();
 }
 
 DatabaseQueryManagerV2::~DatabaseQueryManagerV2()
 {
     readerThreadExit = true;
 
-    for (auto& [_, readerThread] : readerThreadsByBinId_)
-        readerThread->idQueue().setQuitSignal();
+    idOutputQueue_.setQuitSignal();
 
-    for (auto& [_, readerThread] : readerThreadsByBinId_)
-        readerThread->wait();
+    readerThreadPool_.waitAll();
 }
 
 DatabaseQueryManagerV2::DataRecordFileReaderThread::DataRecordFileReaderThread(
-        uint32_t binId,
         DatabaseQueryManagerV2& databaseQueryManager) :
-        binId_(binId), databaseQueryManager_(databaseQueryManager),
-        dataRecordFileReader_(databaseQueryManager_.dataRecordFileByBinId_.at(binId)),
-        idQueue_(MAX_PC_QUEUE_SIZE, WRITE_AHEAD, N_CONSUMERS) { }
+        dqm_(databaseQueryManager), threadId_(nextThreadId_++),
+        ivOutputVecByBinId_(threadCount_)
+{
+    if (threadCount_ == 0)
+        PERROR("call setThreadCount() before constructor call!");
+    // add the current object into allThreads_
+    allThreads_[threadId_] = this;
+
+    // compute binIdRange
+    auto avg = dqm_.indexTable_.binId2Index().size() / threadCount_;
+    auto rmd = dqm_.indexTable_.binId2Index().size() % threadCount_;
+    if (threadId_ < rmd)
+        binIdRange_ = {(avg + 1) * threadId_, (avg + 1) * (threadId_ + 1)};
+    else {
+        binIdRange_.first = (avg + 1) * rmd + avg * (threadId_ - rmd);
+        binIdRange_.second = binIdRange_.first + avg;
+    }
+}
 
 
 void DatabaseQueryManagerV2::DataRecordFileReaderThread::internalRun()
@@ -504,28 +537,80 @@ void DatabaseQueryManagerV2::DataRecordFileReaderThread::internalRun()
     for (;;)
     {
         // when idQueue is empty, thread is blocked here
-        auto [id, quit] = idQueue_.pop();
+        auto [idOutput, quit] = dqm_.idOutputQueue_.pop();
 
         if (quit) {
-            if (databaseQueryManager_.readerThreadExit) break;
+            // merge all threads' count table
+            merge();
+            // request data based on the count
+            requestData();
 
-            databaseQueryManager_.allThreadFinished_.wait();
+            // quit routine
+            if (dqm_.readerThreadExit) break;
+
+            // reset routine
+            dqm_.allThreadFinished_.wait();
+            reset();
             continue;
         }
 
-        if (!inoutDataRecordById_)
-            PERROR("inoutDataRecordById_ is null");
+        if (!idOutput.second)
+            PERROR("output field of idOutput is null");
 
         const IndexValue* iv;
-        if (!(iv = databaseQueryManager_.getInfoById(id.c_str()))) {
+        if (!(iv = dqm_.getInfoById(idOutput.first.c_str()))) {
             fprintf(stderr, "%s: ID [%s] does not exist in database\n",
-                    __FUNCTION__, id.c_str());
+                    __FUNCTION__, idOutput.first.c_str());
             continue;
         }
-        // write result to inout corresponding value field of the key-value pair
-        // note: that this won't need locks or synchronization since keys are unique
-        // and we are not inserting keys, but only individually distinct values
-        dataRecordFileReader_.getDataRecordAtOffset(iv->offset, inoutDataRecordById_->at(id).get());
+
+        ivOutputVecByBinId_[iv->binId].emplace_back(iv, idOutput.second);
+//        dqm_.dataRecordFileByBinId_.at(iv->binId).getDataRecordAtOffset(iv->offset, idOutput.second);
+    }
+}
+
+void DatabaseQueryManagerV2::DataRecordFileReaderThread::reset()
+{
+    // resets all counts to 0
+    for (auto& idOutputVec: ivOutputVecByBinId_)
+        idOutputVec.clear();
+}
+
+void DatabaseQueryManagerV2::DataRecordFileReaderThread::merge()
+{
+    for (uint32_t i = binIdRange_.first; i < binIdRange_.second; i++) {
+        for (uint32_t j = 0; j < threadCount_; j++) {
+            if (j == threadId_) continue;
+            // move other threads' ids vectors into current thread's for the given binIdRange
+            move(allThreads_[j]->ivOutputVecByBinId_[i].begin(), allThreads_[j]->ivOutputVecByBinId_[i].end(),
+                 back_inserter(ivOutputVecByBinId_[i]));
+            allThreads_[j]->ivOutputVecByBinId_[i].clear();
+        }
+    }
+}
+
+void DatabaseQueryManagerV2::DataRecordFileReaderThread::setThreadCount(uint32_t threadCount)
+{
+    threadCount_ = threadCount;
+    allThreads_.resize(threadCount_);
+}
+
+void DatabaseQueryManagerV2::DataRecordFileReaderThread::requestData()
+{
+    constexpr int MAGIC_NUM = 5;
+    for (uint32_t i = binIdRange_.first; i < binIdRange_.second; i++) {
+        // greater than division of MAGIC_NUM, then we read the whole file first then retrieve the data
+        const bool readWholeFile =
+                ivOutputVecByBinId_[i].size() > dqm_.dataRecordFileByBinId_.at(i).numRecords() / MAGIC_NUM;
+        if (readWholeFile) {
+            dqm_.dataRecordFileByBinId_.at(i).loadAllData();
+        }
+        for (auto [iv, output] : ivOutputVecByBinId_[i]) {
+            dqm_.dataRecordFileByBinId_.at(i).getDataRecordAtOffset(iv->offset, output);
+        }
+
+        if (readWholeFile)
+            dqm_.dataRecordFileByBinId_.at(i).freeAllData();
     }
 }
 

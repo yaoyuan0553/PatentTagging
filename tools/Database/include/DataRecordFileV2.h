@@ -56,6 +56,9 @@ public:
     /*! @brief request for a resize of the buffer buf_ */
     void reserve(size_t newSize);
 
+    /*! @brief request for a shrink of buffer size on buf_ (no smaller than FILE_HEAD_SIZE) */
+    void shrink(size_t newSize);
+
     /*! total bytes allocated */
     inline uint32_t capacity() const { return capacity_; }
 
@@ -135,12 +138,30 @@ class DataRecordFileReader : DataRecordFileV2 {
     const std::string filename_;
     int fileHandle_;
 
+    bool allDataLoaded_ = false;
+
     void openDataFile();
     void closeDataFile();
 
 public:
     explicit DataRecordFileReader(const char* dataFilename);
     ~DataRecordFileReader() override;
+
+    using DataRecordFileV2::numRecords;
+    using DataRecordFileV2::numBytes;
+    using DataRecordFileV2::empty;
+
+    /**
+     * @brief load all data from file into RAM
+     * @warning NOT thread-safe
+     */
+    void loadAllData();
+
+    /**
+     * @brief free all data from RAM
+     * @warning NOT thread-safe
+     */
+    void freeAllData();
 
     bool getDataRecordAtOffset(uint64_t offset, DataRecordV2* dataRecord) const;
 };

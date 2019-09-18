@@ -31,6 +31,19 @@ void DataRecordFileV2::reserve(size_t newSize)
         PSYS_FATAL("realloc()");
 }
 
+void DataRecordFileV2::shrink(size_t newSize)
+{
+    // if not smaller, do nothing
+    if (newSize >= capacity_) return;
+
+    // can't be smaller than file head
+    newSize = max(newSize, FILE_HEAD_SIZE);
+
+    buf_ = (char*)realloc(buf_, newSize);
+    if (!buf_)
+        PSYS_FATAL("realloc()");
+}
+
 DataRecordFileWriter::DataRecordFileWriter(size_t maxFileSize) :
         DataRecordFileV2(maxFileSize), curBuf_(buf()), maxFileSize_(maxFileSize)
 {
@@ -78,11 +91,28 @@ void DataRecordFileReader::closeDataFile()
 bool DataRecordFileReader::getDataRecordAtOffset(uint64_t offset, DataRecordV2* dataRecord) const
 {
     try {
-        *dataRecord = DataRecordV2(fileHandle_, offset, nBytes_);
+        if (allDataLoaded_)
+            *dataRecord = DataRecordV2(buf(), offset, nBytes_);
+        else
+            *dataRecord = DataRecordV2(fileHandle_, offset, nBytes_);
     }
     catch (ObjectConstructionFailure& ocf) {
         fprintf(stderr, "DataRecord failed to construct: %s", ocf.what());
         return false;
     }
     return true;
+}
+
+void DataRecordFileReader::loadAllData()
+{
+    reserve(numBytes());
+    if (pread(fileHandle_, buf() + FILE_HEAD_SIZE, numBytes() - FILE_HEAD_SIZE, FILE_HEAD_SIZE) == -1)
+        PSYS_FATAL("error reading (pread()) file [%s]", filename_.c_str());
+    allDataLoaded_ = true;
+}
+
+void DataRecordFileReader::freeAllData()
+{
+    shrink(FILE_HEAD_SIZE);
+    allDataLoaded_ = false;
 }

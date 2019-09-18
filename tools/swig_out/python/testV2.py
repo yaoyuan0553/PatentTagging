@@ -37,7 +37,16 @@ dqm.getContentById(pidList[0], drv2)
 
 dataRecordById = dq.UnorderedMapStringDataRecordV2()
 
-for pid in pidList:
+for pid in miniPidList:
+    dataRecordById[pid] = dq.DataRecordV2()
+
+begin = time.time()
+dqm.getContentByPidList(dataRecordById)
+totalTime = time.time() - begin
+print("getContentByPidList took %.6f s for %s items, speed %.2f Hz" %
+      (totalTime, dataRecordById.size(), dataRecordById.size() / totalTime))
+
+for pid in miniPidList:
     dataRecordById[pid] = dq.DataRecordV2()
 
 begin = time.time()

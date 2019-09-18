@@ -11,6 +11,7 @@
 #include <memory>
 
 #include "ThreadJob.h"
+#include "ThreadPool.h"
 #include "DataTypes.h"
 #include "Barrier.h"
 
@@ -214,37 +215,42 @@ uint32_t DatabaseQueryManager::getIndexByContentPartType(const IndexValue* iv, C
 class DatabaseQueryManagerV2 {
 
     class DataRecordFileReaderThread : public ThreadJob<> {
-        /*! constants */
-        inline static constexpr int MAX_PC_QUEUE_SIZE = 1 << 10;
-        inline static constexpr int WRITE_AHEAD = 1 << 10;
-        inline static constexpr int N_CONSUMERS = 1;
 
-        uint32_t binId_;
+        /*! * @brief atomically increments when every new thread is created */
+        inline static std::atomic_uint32_t nextThreadId_ = 0;
+
+        /*! * @brief set before constructor */
+        inline static uint32_t threadCount_ = 0;
+
+        /*! * @brief keeps track of every thread of this class */
+        inline static std::vector<DataRecordFileReaderThread*> allThreads_;
+
         /*! @brief reference to be able to call query functions from threads */
-        DatabaseQueryManagerV2& databaseQueryManager_;
+        DatabaseQueryManagerV2& dqm_;
 
-        const DataRecordFileReader& dataRecordFileReader_;
+        uint32_t threadId_;
 
-        CBSQueue<std::string> idQueue_;
+        std::pair<uint32_t, uint32_t> binIdRange_;
 
-        /*! @brief input-output parameter, can be updated by setter */
-        std::unordered_map<std::string, std::shared_ptr<DataRecordV2>>* inoutDataRecordById_;
+        /*! @brief to store ids corresponding to their binIds and
+         *         count number of documents in each bin for each run */
+        std::vector<std::vector<std::pair<const IndexValue*, DataRecordV2*>>> ivOutputVecByBinId_;
 
         void internalRun() final;
+        void reset();
+        void merge();
+        void requestData();
 
     public:
-        DataRecordFileReaderThread(uint32_t binId, DatabaseQueryManagerV2& databaseQueryManager);
-
-        inline CBSQueue<std::string>& idQueue() { return idQueue_; }
-
-        /**
-         * @brief updates dataRecordById_ pointer used by internalRun()
-         * @param dataRecordById output dictionary to be updated
+        /*!
+         * @brief set thread count of the thread pool
+         * @details must be called at least once before the first ever constructor call, resize the allThreads_ vector
+         * @warning NOT thread-safe! should not be called once threads are constructed!
+         * @param threadCount sets the new threadCount
          */
-        void setInoutDataRecordById(std::unordered_map<std::string, std::shared_ptr<DataRecordV2>>* dataRecordById)
-        {
-            inoutDataRecordById_ = dataRecordById;
-        }
+        static void setThreadCount(uint32_t threadCount);
+
+        explicit DataRecordFileReaderThread(DatabaseQueryManagerV2& databaseQueryManager);
     };
 
     inline static constexpr uint32_t INVALID = -1;
@@ -258,14 +264,19 @@ class DatabaseQueryManagerV2 {
     const IndexTableV2::IdIndexTable& pidTable_;
     const IndexTableV2::IdIndexTable& aidTable_;
 
-    std::unordered_map<uint32_t, const DataRecordFileReader> dataRecordFileByBinId_;
+    std::unordered_map<uint32_t, DataRecordFileReader> dataRecordFileByBinId_;
 
+    /*! constants */
+    inline static constexpr int MAX_PC_QUEUE_SIZE = 1 << 14;
+    inline static constexpr int WRITE_AHEAD = 1 << 14;
+    inline static constexpr int N_CONSUMERS = 1;
+
+    /** reader thread properties */
+    ThreadPool readerThreadPool_;
+    CBSQueue<std::pair<std::string, DataRecordV2*>> idOutputQueue_;
     /*! @brief barrier to synchronize all dataRecordReaderThreads after they finish loading data */
     Barrier allThreadFinished_;
-
-    std::unordered_map<uint32_t, std::unique_ptr<DataRecordFileReaderThread>> readerThreadsByBinId_;
-
-    bool readerThreadExit = false;
+    std::atomic_bool readerThreadExit = false;
 
 public:
     enum ContentPartType {

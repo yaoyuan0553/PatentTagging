@@ -134,6 +134,67 @@ struct IdDataPart {
 };
 
 struct DataRecordV2 : Stringifiable {
+
+#ifndef SWIG    // for swig parser to skip this function
+    template <typename T, typename = std::enable_if_t<std::is_same_v<T, int> || std::is_same_v<T, char*>, void>>
+    void decode(T fileHandleOrBuf, uint64_t offset, uint64_t maxOffset)
+    {
+        // name aliases for better understanding
+        T fileHandle = fileHandleOrBuf;
+        T buf = fileHandleOrBuf;
+        (void)fileHandle;
+        (void)buf;
+
+#define IS_FILE std::is_same_v<T, int>
+        // T is a file handle type (int)
+        if constexpr (IS_FILE) {
+            // read in record size first
+            if (pread(fileHandle, &recordSize, sizeof(recordSize), offset) == -1)
+                throw ObjectConstructionFailure("pread() error");
+        }
+        else    // T is a buffer type (char*)
+            recordSize = *(uint32_t*)(buf + offset);
+
+        // check record size
+        if (offset + recordSize > maxOffset)
+            throw ObjectConstructionFailure("recordSize exceeds file boundary");
+
+        if constexpr (IS_FILE) {
+            buf = new char[recordSize];
+        }
+        char* curBuf = buf + sizeof(uint32_t);
+        if constexpr (IS_FILE) {
+            // read the rest of the record data with given record size
+            if (pread(fileHandle, buf + sizeof(uint32_t), recordSize - sizeof(uint32_t),
+                      offset + sizeof(uint32_t)) == -1) {
+                delete[] buf;       // release memory before throwing
+                throw ObjectConstructionFailure("pread() error");
+            }
+        }
+#define COPY_AND_INCR(field)                                                \
+    do {                                                                    \
+        uint32_t size = *(uint32_t*)curBuf;                                 \
+        curBuf += sizeof(uint32_t);                                         \
+        if (curBuf - buf + (uint64_t)size > maxOffset)                      \
+            throw ObjectConstructionFailure("size exceeds file boundary");  \
+        field = std::string(curBuf, curBuf + size);                         \
+        curBuf += size;                                                     \
+    } while (0)
+
+        COPY_AND_INCR(title);
+        COPY_AND_INCR(abstract);
+        COPY_AND_INCR(claim);
+        COPY_AND_INCR(description);
+
+        if constexpr (IS_FILE) {
+            delete[] buf;
+        }
+
+#undef COPY_AND_INCR
+#undef IS_FILE
+    }
+#endif
+
 public:
     uint32_t recordSize = 0;
     std::string title;
@@ -145,7 +206,18 @@ public:
     DataRecordV2() = default;
 
     /**
-     * @brief initialize the DataRecord through reading file from an opened file descriptor
+     * @brief initialize a DataRecord through interpreting a pre-read buffer
+     * @param buf       buffer in which the file is stored
+     * @param offset    offset to start reading
+     * @param maxOffset end of buffer
+     */
+    DataRecordV2(char* buf, uint64_t offset, uint64_t maxOffset)
+    {
+        decode(buf, offset, maxOffset);
+    }
+
+    /**
+     * @brief initialize a DataRecord through reading file from an opened file descriptor
      * @param fileHandle    file handle obtained by open()
      * @param offset        offset to start reading
      * @param maxOffset     maximum offset legal for the file i.e. boundary of the file
@@ -164,8 +236,10 @@ public:
         char* curBuf = buf + sizeof(uint32_t);
         // read the rest of the record data with given record size
         if (pread(fileHandle, buf + sizeof(uint32_t), recordSize - sizeof(uint32_t),
-                offset + sizeof(uint32_t)) == -1)
+                offset + sizeof(uint32_t)) == -1) {
+            delete[] buf;   // release memory before throwing
             throw ObjectConstructionFailure("pread() error");
+        }
 
 #define COPY_AND_INCR(field)                                                \
     do {                                                                    \
@@ -189,6 +263,7 @@ public:
     DataRecordV2& operator=(DataRecordV2&& other) noexcept
     {
         recordSize = other.recordSize;
+        other.recordSize = 0;
         title = std::move(other.title);
         abstract = std::move(other.abstract);
         claim = std::move(other.claim);
